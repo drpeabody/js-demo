@@ -1,10 +1,10 @@
 
-canvas = undefined, pen = undefined, n = 5, padding = 20, blockColor = "#DD95DD", blockSize = undefined;
+canvas = undefined, pen = undefined, n = 5, padding = 20, blockColor = "yellow", blockSize = undefined;
 blocks = new Array(n * (n - 1));
 score = 0;
 
 ball = {
-	x: 20, y: 20, radius: 5, color: "#fff",	dx: 1, dy: 1, speed: 3,
+	x: 20, y: 20, radius: 7, color: "#000",	dx: 1, dy: 1, speed: 5,
 	draw: function() {
 		pen.beginPath();
 		pen.fillStyle = this.color;
@@ -17,21 +17,34 @@ ball = {
 		this.y += this.dy * this.speed;
 		if(this.y > canvas.height - this.radius || this.y < this.radius) this.dy *= -1;
 		if(this.x > canvas.width - this.radius || this.x < this.radius) this.dx *= -1;
-
+		
 		if(this.x > bar.x && this.x < bar.x + bar.width){
 			if(this.y + this.radius > bar.y && this.y - this.radius < bar.y + bar.height){
 				this.dy *= -1;
 			}
 		}
-		if(this.y + this.radius > canvas.height){
-			alert('Game Over! Your Score: ' + score);
-			onResize();
+
+		GameOver = () => {
+			if(this.y + this.radius > canvas.height){
+				alert('Game Over! Your Score: ' + score);
+				onResize();
+			}
+
+			if(this.y - this.radius*1.01  <= bar.y){
+				if(this.x <= bar.x && this.x >= bar.x + bar.width){
+					if(this.y + this.radius <= bar.y && this.y - this.radius >= bar.y + bar.height){
+						alert('Game Over! Your Score: ' + score);
+						onResize();
+					}
+				}
+			}
 		}
+		GameOver();
 	},
 };
 
 bar = {
-	x: 0, y: 0, width: 100, height: 30, color: "#0095DD", speed: 10, leftKeyDown: false, rightKeyDown: false,
+	x: 0, y: 0, width: 100, height: 30, color: "red", speed: 10, leftKeyDown: false, rightKeyDown: false,
 	draw: function() {
 		pen.fillStyle = this.color;
 		pen.fillRect(this.x, this.y, this.width, this.height);
@@ -104,15 +117,16 @@ updateAndDrawBlocks = () => {
 }
 
 draw = () => {
-	pen.fillStyle = "#000";
+	pen.fillStyle = "#00bfff";
 	pen.fillRect(0, 0, canvas.width, canvas.height);
 
-	ball.update();
+	
 	bar.update();
+	ball.update();
 	updateAndDrawBlocks();
 	pen.fillText('Score: ' + score, canvas.width/10, canvas.height * 0.9);
-	ball.draw();
 	bar.draw();
+	ball.draw();
 }
 
 onResize();
