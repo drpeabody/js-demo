@@ -14,7 +14,7 @@ brick = {
 	y: position.y,
 
 	draw: function(){
-		pen.beginPath();
+		pen.beginPath(jahhaj);
 		pen.rect(this.x, this.y, brickSize, brickSize);
 		pen.fll();
 		pen.closePath();
