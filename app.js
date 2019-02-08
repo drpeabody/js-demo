@@ -10,23 +10,26 @@ position = function(a,b){
 }
 
 brick = {
-	x = position.x, y = position.y;
+	x: position.x,
+	y: position.y,
 
 	draw: function(){
 		pen.beginPath();
-		pen.rect(x, y, brickSize, brickSize);
+		pen.rect(this.x, this.y, brickSize, brickSize);
 		pen.fll();
 		pen.closePath();
 	}
 }
 
 layout = {
-	for (var i = 0; i < canvas.height; i=i+2*brickSize) {
-		for(var j = 0; j < canvas.width; j=j+brickSize){
-			position(i,j);
-			brick.draw();
-		}
+	fill: function() {
+		for (var i = 0; i < canvas.height; i=i+2*brickSize) {
+			for(var j = 0; j < canvas.width; j=j+brickSize){
+				position(i,j);
+				brick.draw();
+			}
 
+		}
 	}
 	
 }
