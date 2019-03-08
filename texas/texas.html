@@ -145,30 +145,74 @@
 			} else {
 				log('Cannot goto ' + loc + ' from ' + l);
 			}
+		},
+		'look': () => {
+			var l = status.location;
+			var itemsFound = map[l].items;
+			if(itemsFound.length < 1) log('You can\'t see anything significant.');
+			else log('You see:' + (itemsFound.map((s) => '<br>'+s.name())));
 		}
 	}
 
-	const map = {
+	class Item {
+		// This is the super class of all objects in the game.
+		// Some objects are invisible, such as items which require you to search
+		// Some objects can be used
+		// All objects must present a manual fir directions of use
+		// All items have a name
+
+		constructor(look) {
+			this.visible = look;
+		}
+
+		isVisible() { return this.visible; }
+		manual() { return 'Base class, should not be used directly.'; }
+		name() { return 'Base Item'; }
+
+	}
+
+	class Key extends Item {
+		constructor() { 
+  			super(true);
+		}
+		manual() { return 'This is a key, You can use this key with the use command. It\
+			 unlocks a door when used in the correct room.'; }
+		name() { return '\'Key to the Front Door\''; }
+	}
+
+
+	const map = {	
 		'living-room': {
-			adj: ['kitchen', 'staircase'] //Adjacency List
+			adj: ['kitchen', 'staircase'], //Adjacency List
+			items: [ new Key(), new Key() ]
 		},
 		'staircase': {
-			adj: ['bedroom', 'living-room'] //Adjacency List
+			adj: ['bedroom', 'living-room'], //Adjacency List
+			items: [ ]
 
 		},
 		'bedroom': {
-			adj: ['staircase', 'bathroom'] //Adjacency List
+			adj: ['staircase', 'bathroom', 'balcony'], //Adjacency List
+			items: [ ]
 
 		},
 		'kitchen': {
-			adj: ['living-room'] //Adjacency List
+			adj: ['living-room'], //Adjacency List
+			items: [ ]
 
 		},
 		'bathroom': {
-			adj: ['bedroom'] //Adjacency List
+			adj: ['bedroom'], //Adjacency List
+			items: [ ]
 
-		}
+		},
+		'balcony': {
+			adj: ['bedroom'], //Adjacency List
+			items: [ ]
+
+		},
 	}
+
 
 </script>
 <script type="text/javascript">
@@ -184,6 +228,6 @@
 	}, 500);
 
 	$('#locationmeter').innerHTML = 'Current Location: ' + toTitleCase(status.location);
-	
+
 </script>
 </html>
