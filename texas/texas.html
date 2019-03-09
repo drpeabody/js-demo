@@ -152,8 +152,7 @@
 			}
 			else if(map[l].adj.includes(loc)){
 				status.location = loc;
-				$('#locationmeter').innerHTML = 
-					'Current Location: ' + toTitleCase(status.location);
+				$('#locationmeter').innerHTML = toTitleCase(status.location);
 				log('You walked into the ' + loc);
 			} else {
 				log('Cannot goto ' + loc + ' from ' + l);
