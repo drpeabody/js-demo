@@ -38,6 +38,9 @@
 	fieldset {
 		overflow-y: scroll;
 	}
+	span {
+		color: white;
+	}
 </style>
 <body>
 
@@ -59,9 +62,12 @@
 	<fieldset class="info-panel">
 		<legend>Here is Your Status</legend>
 		<ul>
-			<li id="healthmeter"> Health: 100% </li>
-			<li id="staminameter"> Stamina: 100% </li>
-			<li id="locationmeter"> Location: </li>
+			<li> Health: <span id="healthmeter"></span> </li>
+			<li> Stamina: <span id="staminameter"></span> </li>
+			<li> Location: <span id="locationmeter"></span></li>
+			<li> Inventory: 
+				<span><ul id="list-invent"></ul></span>
+			</li>
 		</ul>
 	</fieldset>
 
@@ -100,17 +106,23 @@
 
 <script type="text/javascript">
 	// These are core game functions, please understand how they work before you change
-	var execute = (cmd) => {
-		cmd = cmd.split(' ');
-		if(!commands[cmd[0]]) log('\''+ cmd[0] + '\' is not a valid command right now.');
-		else commands[cmd[0]](cmd[1]); 
+	var execute = (comm) => {
+		var idxFirstSpace = comm.indexOf(" ");
+		var cmd = comm.substring(0, idxFirstSpace);
+		var args = comm.substring(idxFirstSpace + 1);
+		if(idxFirstSpace === -1){
+			cmd = comm;
+			args = '';
+		}
+		if(!commands[cmd]) log('\''+ cmd + '\' is not a valid command right now.');
+		else commands[cmd](args);
 	}
 
 	$().addEventListener('keypress', (e) => {
 		if(e.code === 'Enter'){
 			var cmd = $('.cmd', 0).value;
 			$('.cmd', 0).value = '';
-			execute(cmd.toLowerCase());
+			execute(cmd.trim());
 		}
 	});
 </script>
@@ -121,7 +133,8 @@
 	const status = {
 		health: 100,
 		stamina: 100,
-		location: 'living-room'
+		location: 'living-room',
+		inventory: []
 	}
 
 	const commands = {
@@ -148,12 +161,27 @@
 		},
 		'look': () => {
 			var l = status.location;
-			var itemsFound = map[l].items;
+			var itemsFound = map[l].items.filter(s => s.isVisible());
 			if(itemsFound.length < 1) log('You can\'t see anything significant.');
 			else log('You see:' + (itemsFound.map((s) => '<br>'+s.name())));
 		},
 		'pickup': (item) => {
-			log('Todo');
+			var l = status.location;
+			var itemsFound = map[l].items
+				.filter(s => s.name() === item)
+				.filter(s => s.isPickable());
+			if(itemsFound.length < 1) log('You picked up nothing. To pick up something\
+				 yo must type in its name exactly, use single quotes as well.');
+			else {
+				itemsFound.forEach(s => {
+					log('You picked up: ' + s.name());
+					map[l].items = map[l].items.filter(x => x !== s);
+					var li = $().createElement('li');
+					li.innerHTML = s.name();
+					$("#list-invent").appendChild(li);
+					status.inventory.push(s);
+				});
+			}
 		},
 		'use': (item) => {
 			log('Todo');
@@ -165,21 +193,23 @@
 		// Some objects are invisible, such as items which require you to search
 		// Some objects can be used
 		// All objects must present a manual fir directions of use
-		// All items have a name
+		// All items have a name that is always enclosed in single quotes
 
-		constructor(look) {
+		constructor(look, pick) {
 			this.visible = look;
+			this.pickable = pick;
 		}
 
 		isVisible() { return this.visible; }
+		isPickable() { return this.pickable; }
 		manual() { return 'Base class, should not be used directly.'; }
-		name() { return 'Base Item'; }
+		name() { return '\'Base Item\''; }
 
 	}
 
 	class Key extends Item {
 		constructor() { 
-  			super(true);
+  			super(true, true);
 		}
 		manual() { return 'This is a key, You can use this key with the use command. It\
 			 unlocks a door when used in the correct room.'; }
@@ -190,7 +220,7 @@
 	const map = {	
 		'living-room': {
 			adj: ['kitchen', 'staircase'], //Adjacency List
-			items: [ new Key(), new Key() ]
+			items: [ new Key(), new Key(), new Item(true, true) ]
 		},
 		'staircase': {
 			adj: ['bedroom', 'living-room'], //Adjacency List
@@ -233,7 +263,9 @@
 		}, 1500);
 	}, 500);
 
-	$('#locationmeter').innerHTML = 'Current Location: ' + toTitleCase(status.location);
+	$('#locationmeter').innerHTML = toTitleCase(status.location);
+	$('#staminameter').innerHTML = '100%';
+	$('#healthmeter').innerHTML = '100%';
 
 </script>
 </html>
