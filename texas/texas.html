@@ -190,6 +190,7 @@
     	if(!arr || arr.constructor !== Array) return arr;
     	return arr.reduce((a, s) => a + "<br>" + s);
     }
+
 </script>
 
 <script type="text/javascript">
@@ -210,11 +211,36 @@
 		else commands[cmd](args);
 	}
 
-	$().addEventListener('keypress', (e) => {
+	var commandHistory = [];
+	var hist = 0;
+
+	$().addEventListener('keydown', (e) => {
+		var elem = $('.cmd', 0), val = $('.cmd', 0).value;
 		if(e.code === 'Enter'){
-			var cmd = $('.cmd', 0).value;
-			$('.cmd', 0).value = '';
-			execute(cmd.trim());
+			var cmd = val.trim();
+			if(cmd === ''){
+				log('Type help to view the commands you can use.');
+				return;
+			}
+			commandHistory.push(val);
+			elem.value = '';
+			execute(cmd);
+			hist = 0;
+		} else if(e.code === 'ArrowUp'){
+			if(val === '') hist = 0;
+			elem.value = commandHistory[commandHistory.length - hist - 1];
+			if(hist < commandHistory.length - 1) hist++;
+	        window.setTimeout(function() {
+				elem.setSelectionRange(100, 100);
+	        }, 0);
+		}
+		else if(e.code === 'ArrowDown'){
+			elem.value = commandHistory[commandHistory.length - hist - 1];
+			if(hist > 0) hist--;
+			else elem.value = '';
+	        window.setTimeout(function() {
+				elem.setSelectionRange(100, 100);
+	        }, 0);
 		}
 	});
 </script>
