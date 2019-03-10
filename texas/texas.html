@@ -2,44 +2,102 @@
 <html>
 <head>
 	<meta charset="utf-8">
+	<link href="https://fonts.googleapis.com/css?family=Bree+Serif|Artifika|Major+Mono+Display" rel="stylesheet"> 
 	<title>TEXAS - Text Based Strategy</title>
 </head>
 <style type="text/css">
 	body{
-		text-align: center;
-		background: #111;
+	    font-family: 'Artifika', serif;
+	    font-size: 18px;
+		text-align: center;  
+		background: #000300;
 		color: #8a6;
+		letter-spacing: 1px;
+	}
+	h1 {
+		margin-top: 1vh;
+		font-size: 2.6em;
+		font-family: 'Bree Serif', serif;
+		margin-bottom: 0;
+		letter-spacing: 2px;
+	}
+	h2 {
+		margin-top: 1vh;
+		font-size: 1.7em;
+		font-family: 'Bree Serif', serif;
+		margin-bottom: 3vh;
+		letter-spacing: 2px;
 	}
 	.right-panel {
-		position: absolute;
-		left: 62vw;
-		width: 33vw;
-		height: 60vh;
+		right: 2vw;
+		width: 39vw;
 	}
 	.info-panel {
-		position: absolute;
 		left: 2vw;
-		width: 55.5vw;
-		height: 60vh;
+		width: 55vw;
 	}
 	.bottom-panel {
-		position: absolute;
 		left: 2vw;
-		bottom: 2vh;
-		width: 93vw;
-		height: 8vh;
+		top: 87vh;
+		width: 95.5vw;
+		max-height: 10vh;
+		overflow-y: hidden;
+		background: linear-gradient(to top, rgba(30, 9, 134, 0.2), rgba(30, 9, 134, 0));
 	}
 	.cmd {
+		margin-top: 3vh;
 		width: 70%;
 	}
 	ul {
 		text-align: left;
 	}
-	fieldset {
+	.panel {
+		height: 62vh;
+		position: absolute;
 		overflow-y: scroll;
+		background: linear-gradient(to bottom, rgba(30, 9, 134, 0.15), rgba(30, 9, 134, 0.05));
 	}
-	span {
+	.meter {
+		padding-right: 5vw;
+		float: right;
+		font-family: 'Major Mono Display', monospace;
 		color: white;
+	}
+
+	::-webkit-scrollbar {
+	    height: 4px;
+	    width: 4px;
+	    right: 100px;
+	    background: transparent;
+	}
+
+	::-webkit-scrollbar-thumb {
+	    background: #999;
+		padding-right: 3px;
+	}
+	::-webkit-scrollbar-thumb:hover {
+	    background: #fff;
+		padding-right: 3px;
+	}
+
+	::-webkit-scrollbar-corner {
+	    background: transparent;
+	}
+
+	@-moz-document url-prefix() {
+		/* Firefox Only */
+		h1 {
+			font-size: 42px;
+			letter-spacing: 1px;
+		}
+		h2 {
+			font-size: 28px;
+			letter-spacing: 1px;
+		}
+	    body {
+	    	font-size: 16.5px;
+			background: #010d02;
+	    }
 	}
 </style>
 <body>
@@ -47,35 +105,42 @@
 	<h1>TEXAS</h1>
 	<h2>A Text Based Strategy Game.</h2>
 
-	<fieldset class="right-panel">
-		<legend>Logs</legend>
+	<div class="right-panel panel">
+		<h3>Logs</h3>
 		<ul id="logger">
 			
 		</ul>
-	</fieldset>
+	</div>
 
-	<fieldset class="bottom-panel">
-		<legend>Command</legend>
+	<div class="panel bottom-panel">
 		Type in Your Command: <input type="text" class="cmd">
-	</fieldset>
+	</div>
 
-	<fieldset class="info-panel">
-		<legend>Here is Your Status</legend>
+	<div class="info-panel panel">
+		<h3>Here is Your Status</h3>
 		<ul>
-			<li> Health: <span id="healthmeter"></span> </li>
-			<li> Stamina: <span id="staminameter"></span> </li>
-			<li> Location: <span id="locationmeter"></span></li>
+			<li> Health: <span id="healthmeter" class="meter"></span> </li>
+			<li> Location: <span id="locationmeter" class="meter"></span></li>
 			<li> Inventory: 
 				<span><ul id="list-invent"></ul></span>
 			</li>
 		</ul>
-	</fieldset>
+	</div>
 
 </body>
 
 <script type="text/javascript"> 
 	// These are some utility functions to make life easier
 	// The game doesn't depend upon them
+
+	// $() -> 							document
+	// $(".abc") -> 					HTMLCollection with all elements that have class 'abc'
+	// $(".abc", n) -> 					nth node in HTMLCollection with all 
+	//									elements that have class 'abc'
+	// $("#fgh") -> 					element with id "fgh"
+	// $("#fgh", 'li some string') -> 	insert 'li' node with innerHTML = 'some string' 
+	//									into element whose id is 'fgh'
+
 	var $ = (name, idx) => {
 		if(!name || name === '') return document;
 		else if(name.startsWith('.')) {
@@ -84,14 +149,21 @@
 			else return docs[idx];
 		}
 		else if(name.startsWith('#')) {
-			return document.getElementById(name.substring(1));
+			if(!idx)
+				return document.getElementById(name.substring(1));
+			else {
+				var idxFirstSpace = idx.indexOf(" ");
+				var tag = idx.substring(0, idxFirstSpace);
+				var args = idx.substring(idxFirstSpace + 1);
+				var elem = document.createElement(tag);
+				elem.innerHTML = args;
+				document.getElementById(name.substring(1)).appendChild(elem);
+			}
 		}
 	}
 	var clog = console.log;
 	var log = (val) => {
-		var li = $().createElement('li');
-		li.innerHTML = val;
-		$("#logger").appendChild(li);
+		$("#logger", "li " + val);
 	}
 
 	var toTitleCase = function (str) {
@@ -102,11 +174,26 @@
             }
         );
     }
+
+    var getBar = function(percent) {
+    	var fullBarlen = 32;
+    	var num = Math.round(percent * fullBarlen / 100);
+    	return '|' + '='.repeat(num) + '&nbsp'.repeat(fullBarlen - num) + '|';
+    }
+
+    var arrayToString = function(arr) {
+    	if(!arr || arr.constructor !== Array) return arr;
+    	return arr.reduce((a, s) => a + "<br>" + s);
+    }
 </script>
 
 <script type="text/javascript">
 	// These are core game functions, please understand how they work before you change
 	var execute = (comm) => {
+		if(comm.startsWith('<script>')) {
+			log('Nice Try.');
+			return;
+		}
 		var idxFirstSpace = comm.indexOf(" ");
 		var cmd = comm.substring(0, idxFirstSpace);
 		var args = comm.substring(idxFirstSpace + 1);
@@ -132,14 +219,22 @@
 	// To customise the game or to add more features to it.
 	const status = {
 		health: 100,
-		stamina: 100,
 		location: 'living-room',
-		inventory: []
+		inventory: [],
+		updateInternal: (val, elem) => {
+			if(!val || isNaN(val) || val < 0) val = 0;
+			if(val > 100) val = 100;
+			elem.innerHTML = getBar(val);
+			return val;
+		},
+		updateHealth: (val) => {
+			status.health = status.updateInternal(health, $('#healthmeter'));
+		},
 	}
 
 	const commands = {
 		'help': () => {
-			log(Object.keys(commands));
+			log(arrayToString(Object.keys(commands)));
 		},
 		'clear': () => {
 			var v = $('#logger');
@@ -148,7 +243,7 @@
 		'goto': (loc) => {
 			var l = status.location;
 			if(!loc || loc === ''){
-				log('You can Goto ' + map[l].adj.toString() + ' from ' + l);
+				log('You can Goto <br>' + arrayToString(map[l].adj) + '<br> from ' + l);
 			}
 			else if(map[l].adj.includes(loc)){
 				status.location = loc;
@@ -160,24 +255,22 @@
 		},
 		'look': () => {
 			var l = status.location;
-			var itemsFound = map[l].items.filter(s => s.isVisible());
+			var itemsFound = map[l].items
+				.filter(s => s.isVisible()).map(s => s.name);
 			if(itemsFound.length < 1) log('You can\'t see anything significant.');
-			else log('You see:' + (itemsFound.map((s) => '<br>'+s.name())));
+			else log('You see: <br>' + arrayToString(itemsFound));
 		},
 		'pickup': (item) => {
 			var l = status.location;
 			var itemsFound = map[l].items
-				.filter(s => s.name() === item)
-				.filter(s => s.isPickable());
+				.filter(s => s.name === item && s.isPickable());
 			if(itemsFound.length < 1) log('You picked up nothing. To pick up something\
-				 yo must type in its name exactly, use single quotes as well.');
+				 you must type in its name exactly.');
 			else {
 				itemsFound.forEach(s => {
-					log('You picked up: ' + s.name());
+					log('You picked up: ' + s.name);
 					map[l].items = map[l].items.filter(x => x !== s);
-					var li = $().createElement('li');
-					li.innerHTML = s.name();
-					$("#list-invent").appendChild(li);
+					$("#list-invent", 'li ' + s.name);
 					status.inventory.push(s);
 				});
 			}
@@ -191,35 +284,36 @@
 		// This is the super class of all objects in the game.
 		// Some objects are invisible, such as items which require you to search
 		// Some objects can be used
-		// All objects must present a manual fir directions of use
 		// All items have a name that is always enclosed in single quotes
 
-		constructor(look, pick) {
+		constructor(look, pick, name) {
 			this.visible = look;
 			this.pickable = pick;
+			this.name = name;
 		}
 
 		isVisible() { return this.visible; }
 		isPickable() { return this.pickable; }
-		manual() { return 'Base class, should not be used directly.'; }
-		name() { return '\'Base Item\''; }
-
 	}
 
 	class Key extends Item {
 		constructor() { 
-  			super(true, true);
+  			super(true, true, 'Key to the Front Door');
 		}
-		manual() { return 'This is a key, You can use this key with the use command. It\
-			 unlocks a door when used in the correct room.'; }
-		name() { return '\'Key to the Front Door\''; }
+		// name() { return '&#9911 Key to the Front Door; }
+	}
+
+	class Door extends Item {
+		constructor(name) {
+			super(true, false, name);
+		}
 	}
 
 
 	const map = {	
 		'living-room': {
 			adj: ['kitchen', 'staircase'], //Adjacency List
-			items: [ new Key(), new Key(), new Item(true, true) ]
+			items: [ new Key(), new Door('The Front Door') ]
 		},
 		'staircase': {
 			adj: ['bedroom', 'living-room'], //Adjacency List
@@ -263,8 +357,7 @@
 	}, 500);
 
 	$('#locationmeter').innerHTML = toTitleCase(status.location);
-	$('#staminameter').innerHTML = '100%';
-	$('#healthmeter').innerHTML = '100%';
+	$('#healthmeter').innerHTML = getBar(100);
 
 </script>
 </html>
