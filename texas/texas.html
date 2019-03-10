@@ -263,15 +263,19 @@
 		'pickup': (item) => {
 			var l = status.location;
 			var itemsFound = map[l].items
-				.filter(s => s.name === item && s.isPickable());
+				.filter(s => s.name === item);
 			if(itemsFound.length < 1) log('You picked up nothing. To pick up something\
 				 you must type in its name exactly.');
 			else {
 				itemsFound.forEach(s => {
-					log('You picked up: ' + s.name);
-					map[l].items = map[l].items.filter(x => x !== s);
-					$("#list-invent", 'li ' + s.name);
-					status.inventory.push(s);
+					if(!s.isPickable()){
+						log('You cannot pickup ' + s.name);
+					} else {
+						log('You picked up: ' + s.name);
+						map[l].items = map[l].items.filter(x => x !== s);
+						$("#list-invent", 'li ' + s.name);
+						status.inventory.push(s);
+					}
 				});
 			}
 		},
@@ -297,8 +301,8 @@
 	}
 
 	class Key extends Item {
-		constructor() { 
-  			super(true, true, 'Key to the Front Door');
+		constructor(name) { 
+  			super(true, true, name);
 		}
 		// name() { return '&#9911 Key to the Front Door; }
 	}
@@ -313,7 +317,7 @@
 	const map = {	
 		'living-room': {
 			adj: ['kitchen', 'staircase'], //Adjacency List
-			items: [ new Key(), new Door('The Front Door') ]
+			items: [ new Key('Key To The Front Door'), new Door('The Front Door'),new Door('The Front Door') ]
 		},
 		'staircase': {
 			adj: ['bedroom', 'living-room'], //Adjacency List
