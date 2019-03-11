@@ -50,6 +50,7 @@
 	}
 	ul {
 		text-align: left;
+		/*display: box;*/
 	}
 	.panel {
 		height: 62vh;
@@ -61,6 +62,7 @@
 	    outline: none;
 	    border-color: #003c00;
 	    box-shadow: 0 0 10px #003c00;
+	    /*transition: all 0.5s ease;*/
 	}
 	.meter {
 		padding-right: 5vw;
@@ -162,6 +164,7 @@
 				var args = idx.substring(idxFirstSpace + 1);
 				var elem = document.createElement(tag);
 				elem.innerHTML = args;
+				elem.animate([ {opacity: 0}, {opacity: 100} ], {duration: 250});
 				document.getElementById(name.substring(1)).appendChild(elem);
 			}
 		}
@@ -169,6 +172,7 @@
 	var clog = console.log;
 	var log = (val) => {
 		$("#logger", "li " + val);
+		$('.right-panel', 0).scrollTop += 1000;
 	}
 
 	var toTitleCase = function (str) {
@@ -347,7 +351,6 @@
 					found = false; 
 				}
 			}
-
 			if(found) {
 				if(!found.use) log('Cannot use useless ' + item + '.');
 				else 				found.use();
