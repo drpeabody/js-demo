@@ -423,20 +423,24 @@
 	}
 
 	const FrontDoor = new Door('The Front Door', 'outside', true);
+	const BedRoomDoor = new Door('The Bedroom Door', 'bedroom', true);
+	const BedRoomDoorRev = new Door('The Bedroom Door', 'staircase', false);
+	const FrontDoorKey = new Key('Key To The Front Door', FrontDoor);
+	const BedRoomDoorKey = new Key('Key To The Bedroom', BedRoomDoor);
 
 	const map = {	
 		'living-room': {
 			adj: ['kitchen', 'staircase'], //Adjacency List
-			items: [ new Key('Key To The Front Door', FrontDoor), FrontDoor ]
+			items: [ BedRoomDoorKey, FrontDoor ]
 		},
 		'staircase': {
-			adj: ['bedroom', 'living-room'], //Adjacency List
-			items: [ ]
+			adj: ['living-room'], //Adjacency List
+			items: [ BedRoomDoor ]
 
 		},
 		'bedroom': {
-			adj: ['staircase', 'bathroom', 'balcony'], //Adjacency List
-			items: [ ]
+			adj: ['bathroom', 'balcony'], //Adjacency List
+			items: [ BedRoomDoorRev]
 
 		},
 		'kitchen': {
@@ -446,7 +450,7 @@
 		},
 		'bathroom': {
 			adj: ['bedroom'], //Adjacency List
-			items: [ ]
+			items: [ FrontDoorKey ]
 
 		},
 		'balcony': {
