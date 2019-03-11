@@ -191,6 +191,23 @@
     	return arr.reduce((a, s) => a + "<br>" + s);
     }
 
+    // Usefule Type Checking Function
+
+	// assert(!!door, true); 
+	//		Fails for null, '', undefined
+	//		Success for any non empty object
+	// assert(door instanceof Door, true);
+	//		Checks for objects that were made using new keyword
+	// assert(typeof name, 'string')
+	//		Checks of type of built in objects
+	// assert(typeof foo, 'function')
+	// 		Also works
+
+    var assert = function(obj1, obj2) {
+    	if(obj1 !== obj2) 
+    		throw Error('Assetion Failed on ' + obj1 + ', ' + obj2);
+    }
+
 </script>
 
 <script type="text/javascript">
@@ -261,6 +278,13 @@
 		updateHealth: (val) => {
 			status.health = status.updateInternal(health, $('#healthmeter'));
 		},
+		updateLocation: (loc) => {
+			status.location = loc;
+			$('#locationmeter').innerHTML = toTitleCase(status.location);
+			if(loc === 'outside') {
+				log('Congratulaitons! You won by successfully escaping the house!');
+			}
+		}
 	}
 
 	const commands = {
@@ -275,10 +299,8 @@
 			var l = status.location;
 			if(!loc || loc === ''){
 				log('You can Goto <br>' + arrayToString(map[l].adj) + '<br> from ' + l);
-			}
-			else if(map[l].adj.includes(loc)){
-				status.location = loc;
-				$('#locationmeter').innerHTML = toTitleCase(status.location);
+			} else if(map[l].adj.includes(loc)){
+				status.updateLocation(loc);
 				log('You walked into the ' + loc);
 			} else {
 				log('Cannot goto ' + loc + ' from ' + l);
@@ -311,7 +333,25 @@
 			}
 		},
 		'use': (item) => {
-			log('Todo');
+			var found = status.inventory.find(s => s.name === item);
+
+			if(!found) {
+				// Find an unpickable item from the inventory
+				found = map[status.location].items.find(s => s.name === item);
+				if(!found) {
+					log('Cannot find ' + item);
+					found = false; 
+				}
+				else if(found.isPickable()){
+					log('You must pickup ' + item + ' to use it.');
+					found = false; 
+				}
+			}
+
+			if(found) {
+				if(!found.use) log('Cannot use useless ' + item + '.');
+				else 				found.use();
+			}
 		}
 	}
 
@@ -319,9 +359,13 @@
 		// This is the super class of all objects in the game.
 		// Some objects are invisible, such as items which require you to search
 		// Some objects can be used
-		// All items have a name that is always enclosed in single quotes
+		// All items have a name that is used by pattern matching to pickup or drop
+		// All usable objects must define the use() function that returns a string
 
 		constructor(look, pick, name) {
+			assert(typeof look, 'boolean');
+			assert(typeof pick, 'boolean');
+			assert(typeof name, 'string');
 			this.visible = look;
 			this.pickable = pick;
 			this.name = name;
@@ -332,23 +376,55 @@
 	}
 
 	class Key extends Item {
-		constructor(name) { 
+		constructor(name, door) { 
   			super(true, true, name);
+  			assert(!!door, true);
+  			assert(door instanceof Door, true);
+  			this.door = door;
+		}
+
+		use() {
+			// The Door location must be the current location
+			var canUse = map.find(this.door.name) === status.location;
+
+			if(canUse) {
+				var str = 'You used ' + this.name + '. ' + this.door.name + ' is now ';
+				this.door.isLocked = !this.door.isLocked;
+				if(this.door.isLocked) str += 'locked.';
+				else str += 'unlocked.';
+				log(str);
+			}
+			else log('This key can only be used on ' + this.door.name);
+
 		}
 		// name() { return '&#9911 Key to the Front Door; }
 	}
 
 	class Door extends Item {
-		constructor(name) {
+		constructor(name, dest, isLocked) {
 			super(true, false, name);
+			assert(typeof isLocked, 'boolean');
+			assert(typeof dest, 'string');
+			this.dest = dest;
+			this.isLocked = isLocked;
+		}
+
+		use() {
+			if(this.isLocked) 
+				log(this.name + ' is Locked.');
+			else {
+				status.updateLocation(this.dest);
+				log('You used the ' + this.name + ' and reached the ' + this.dest);
+			}
 		}
 	}
 
+	const FrontDoor = new Door('The Front Door', 'outside', true);
 
 	const map = {	
 		'living-room': {
 			adj: ['kitchen', 'staircase'], //Adjacency List
-			items: [ new Key('Key To The Front Door'), new Door('The Front Door'),new Door('The Front Door') ]
+			items: [ new Key('Key To The Front Door', FrontDoor), FrontDoor ]
 		},
 		'staircase': {
 			adj: ['bedroom', 'living-room'], //Adjacency List
@@ -375,6 +451,20 @@
 			items: [ ]
 
 		},
+		'outside': {
+			adj: [],
+			items: []
+		},
+
+		find: (itemName) => {
+			if(!itemName) return '';
+			for(var location in map){
+				if(!map[location].items) continue;
+				if(map[location].items.some(s => s.name === itemName))
+					return location;
+			}
+			return '';
+		}
 	}
 
 
