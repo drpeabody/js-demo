@@ -2,12 +2,55 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <html>
+<style type="text/css">
+	#webgl-container {
+		margin: 0; 
+		width: 90%;
+		height: 90%;
+	}
+</style>
 <head>
 	<title> Welcome to a Game </title>
 </head>
-<body onresize="onResize()" onkeydown="onKeyDown(event)" onkeyup="onKeyUp(event)">
-	<canvas id="canvas"></canvas>
+<body">
+    <div id="webgl-container"></div>
 </body>
 </html>
 
-<script type="text/javascript" src="app.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/102/three.js"></script>
+<script type="text/javascript">
+	var scene = new THREE.Scene();
+
+	var camera = new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,1,1000);
+
+	var renderer = new THREE.WebGLRenderer();
+
+
+	renderer.setSize( window.innerWidth, window.innerHeight );
+
+	// tried this a little different from the example in docs
+	document.getElementById("webgl-container").appendChild(renderer.domElement);
+
+
+	//  This is where introtowebgl uses CubeGeometry
+	var geometry = new THREE.BoxGeometry(1,1,1);
+
+	var material = new THREE.MeshBasicMaterial({color:0x00ff20});
+
+	var cube = new THREE.Mesh(geometry,material);
+
+	console.log(cube.rotation);
+
+	scene.add(cube);
+
+	camera.position.z = 3;
+
+	function render (){
+		requestAnimationFrame(render);
+		cube.rotation.x +=.01;
+		cube.rotation.y += .04;
+
+		renderer.render(scene,camera);
+	}
+	render();
+</script>
