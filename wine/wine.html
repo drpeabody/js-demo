@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<link href="https://fonts.googleapis.com/css?family=Bree+Serif|Artifika|Major+Mono+Display" rel="stylesheet"> 
+	<title>TEXAS - Text Based Strategy</title>
+</head>
+<body>
+
+	<canvas id="canvas"></canvas>
+
+</body>
+
+<script type="text/javascript"> 
+	// These are some utility functions to make life easier
+	// The game doesn't depend upon them
+
+	// $() -> 							document
+	// $(".abc") -> 					HTMLCollection with all elements that have class 'abc'
+	// $(".abc", n) -> 					nth node in HTMLCollection with all 
+	//									elements that have class 'abc'
+	// $("#fgh") -> 					element with id "fgh"
+	// $("#fgh", 'li some string') -> 	insert 'li' node with innerHTML = 'some string' 
+	//									into element whose id is 'fgh'
+
+	var $ = (name, idx) => {
+		if(!name || name === '') return document;
+		else if(name.startsWith('.')) {
+			var docs = document.getElementsByClassName(name.substring(1));
+			if(isNaN(idx)) return docs;
+			else return docs[idx];
+		}
+		else if(name.startsWith('#')) {
+			if(!idx)
+				return document.getElementById(name.substring(1));
+			else {
+				var idxFirstSpace = idx.indexOf(" ");
+				var tag = idx.substring(0, idxFirstSpace);
+				var args = idx.substring(idxFirstSpace + 1);
+				var elem = document.createElement(tag);
+				elem.innerHTML = args;
+				elem.animate([ {opacity: 0}, {opacity: 100} ], {duration: 250});
+				document.getElementById(name.substring(1)).appendChild(elem);
+			}
+		}
+	}
+	var clog = console.log;
+	var log = (val) => {
+		$("#logger", "li " + val);
+		$('.right-panel', 0).scrollTop += 1000;
+	}
+
+	var toTitleCase = function (str) {
+        return str.replace(
+            /\w\S*/g,
+            function(txt) {
+                return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            }
+        );
+    }
+
+    var arrayToString = function(arr) {
+    	if(!arr || arr.constructor !== Array) return arr;
+    	return arr.reduce((a, s) => a + "<br>" + s);
+    }
+
+    // Usefule Type Checking Function
+
+	// assert(!!door, true); 
+	//		Fails for null, '', undefined
+	//		Success for any non empty object
+	// assert(door instanceof Door, true);
+	//		Checks for objects that were made using new keyword
+	// assert(typeof name, 'string')
+	//		Checks of type of built in objects
+	// assert(typeof foo, 'function')
+	// 		Also works
+
+    var assert = function(obj1, obj2) {
+    	if(obj1 !== obj2) 
+    		throw Error('Assetion Failed on ' + obj1 + ', ' + obj2);
+    }
+</script>
+
+<script type="text/javascript">
+	
+</script>
+</html>

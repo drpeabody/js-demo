@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title> JSCii Cam</title>
+</head>
+<body>
+	<video style="display: none;"> Some Video </video>
+	<canvas id="canvas" style="max-height: 100vh; max-width: 100vw;"></canvas>
+</body>
+
+<script type="text/javascript">
+	// Prefer camera resolution nearest to 1280x720.
+	var width = 1280, height = 720;
+	var constraints = { audio: false, video: { width: width, height: height }};
+	var video = document.querySelector('video');
+
+	navigator.mediaDevices.getUserMedia(constraints)
+	.then((mediaStream) => {
+        video.setAttribute('width', width);
+        video.setAttribute('height', height);
+		video.srcObject = mediaStream;
+		video.play();
+		draw();
+	})
+	.catch((err) => { console.log(err.name + ": " + err.message); }); 
+
+	var canvas = document.getElementById("canvas");
+
+	canvas.width = width;
+	canvas.height = height;
+
+	var context = canvas.getContext('2d');
+	// var img = new Image();
+
+	var sat = " ,:~+=ow@", len = sat.length - 1;
+	var numX = 180, numY = 120;
+	var pixPerCellX = Math.ceil(width / numX);
+	var pixPerCellY = Math.ceil(height / numY);
+	context.font = pixPerCellX+"px Arial";
+	// context.fillstyle = "#111";
+
+	avgColor = (img, X, Y, w, h) => {
+		var sum = 0, max = w * h;
+
+		for(var x = X; x < X + w; x++){
+			for(var y = Y; y < Y + h; y++){
+				var RIdx = 4*(y * img.width + x);
+				sum += (img.data[RIdx] + img.data[RIdx + 1] + img.data[RIdx + 2]);
+			}
+		}
+
+		return (sum / max / 3);
+	}
+
+	draw = () => {
+
+		context.drawImage(video, 0, 0, width, height);
+		var img = context.getImageData(0, 0, width, height);
+		// var data = new Array(numX).fill(new Array(numY));
+
+		// for(var x = 0; x < numX; x++){
+			// for(var y = 0; y < numY; y++){
+				// var pX = Math.floor(x/numX * width);
+				// var pY = Math.floor(y/numY * height);
+
+				// data[x][y] = avgColor(img, pX, pY, pixPerCellX, pixPerCellY);
+			// }
+		// }
+
+		// context.putImageData(img, 0, 0);
+
+		var backup = img.data.slice();
+
+		context.fillStyle = "#000";
+		context.fillRect(0, 0, width, height);
+		context.fillStyle = "#fff";
+
+		for(var x = 0; x < width; x += pixPerCellX){
+			for(var y = 0; y < height; y += pixPerCellY){
+				var pix = 4*(y * img.width + x);
+
+				var idx = len - (backup[pix]+backup[pix+1]+backup[pix+2]) * len / 255 / 3;
+				// var t = ;
+
+				context.fillText(sat.charAt(idx), x, y);
+			}
+		}
+
+		requestAnimationFrame(draw);
+	}
+
+	// draw();
+
+</script>
+
+</html>
