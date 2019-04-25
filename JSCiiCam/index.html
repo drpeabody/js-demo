@@ -72,9 +72,9 @@
 
 		var backup = img.data.slice();
 
-		context.fillStyle = "#000";
-		context.fillRect(0, 0, width, height);
 		context.fillStyle = "#fff";
+		context.fillRect(0, 0, width, height);
+		context.fillStyle = "#000";
 
 		for(var x = 0; x < width; x += pixPerCellX){
 			for(var y = 0; y < height; y += pixPerCellY){
