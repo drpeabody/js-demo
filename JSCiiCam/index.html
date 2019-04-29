@@ -33,7 +33,7 @@
 
 	var context = canvas.getContext('2d');
 
-	var sat = " .,:~=uw@", len = sat.length - 1;
+	var sat = " .,:~=uw#", len = sat.length - 1;
 	var numX = 258, numY = 180;
 	var pixPerCellX = Math.ceil(width / numX);
 	var pixPerCellY = Math.ceil(height / numY);
@@ -42,19 +42,19 @@
 
 	draw = () => {
 
+		var prev = context.getImageData(0, 0, width, height);
 		context.drawImage(video, 0, 0, width, height);
 		var img = context.getImageData(0, 0, width, height);
+		context.putImageData(prev, 0, 0);
 
 		var backup = img.data.slice();
 
-		context.fillStyle = "#fff";
+		context.fillStyle = "#00000011";
 		context.fillRect(0, 0, width, height);
-		context.fillStyle = "#000";
+		context.fillStyle = "#fff";
 
-		var string = [];
-
+		var t = Array(numX);
 		for(var y = 0; y < height; y += pixPerCellY){
-			var t = Array(numX);
 			for(var x = 0; x < width; x += pixPerCellX){
 
 				var pix = 4*(y * img.width + x);
@@ -69,7 +69,7 @@
 		requestAnimationFrame(draw);
 	}
 
-	// draw();
+	console.log("Fix Permission when serving through html");
 
 </script>
 
