@@ -2,87 +2,213 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<link href="https://fonts.googleapis.com/css?family=Bree+Serif|Artifika|Major+Mono+Display" rel="stylesheet"> 
-	<title>TEXAS - Text Based Strategy</title>
+	<!-- <link href="https://fonts.googleapis.com/css?family=Bree+Serif|Artifika|Major+Mono+Display" rel="stylesheet">  -->
+	<title>Wine War Simulator</title>
 </head>
-<body>
+<body style="padding: 0; margin: 0;">
 
 	<canvas id="canvas"></canvas>
 
 </body>
 
 <script type="text/javascript"> 
-	// These are some utility functions to make life easier
-	// The game doesn't depend upon them
+	const canvas = document.getElementById("canvas");
+	canvas.width = window.innerWidth;
+	canvas.height = window.innerHeight;
+	const ctx = canvas.getContext("2d");
 
-	// $() -> 							document
-	// $(".abc") -> 					HTMLCollection with all elements that have class 'abc'
-	// $(".abc", n) -> 					nth node in HTMLCollection with all 
-	//									elements that have class 'abc'
-	// $("#fgh") -> 					element with id "fgh"
-	// $("#fgh", 'li some string') -> 	insert 'li' node with innerHTML = 'some string' 
-	//									into element whose id is 'fgh'
+	const HEALTH_MAX = 100;
+	const COLOR_FG = "#00f";
+	const COLOR_BG = "#111";
+	const COLOR_HEALTH_REMAIN = "#0f0";
+	const COLOR_HEALTH_GONE = "#f00";
+	const SIZE_SOLDIER = 10;
+	const SIZE_CIRCLE_EFFECT = 35;
+	const TIME_CIRCLE_DURATION = 300;
+	const SPEED_SOLDIER = 0.1;
 
-	var $ = (name, idx) => {
-		if(!name || name === '') return document;
-		else if(name.startsWith('.')) {
-			var docs = document.getElementsByClassName(name.substring(1));
-			if(isNaN(idx)) return docs;
-			else return docs[idx];
+	// Implement Stamina and supplies as well.
+
+	class vec2 {
+		constructor(x, y){
+			this.x = x; this.y = y;
 		}
-		else if(name.startsWith('#')) {
-			if(!idx)
-				return document.getElementById(name.substring(1));
-			else {
-				var idxFirstSpace = idx.indexOf(" ");
-				var tag = idx.substring(0, idxFirstSpace);
-				var args = idx.substring(idxFirstSpace + 1);
-				var elem = document.createElement(tag);
-				elem.innerHTML = args;
-				elem.animate([ {opacity: 0}, {opacity: 100} ], {duration: 250});
-				document.getElementById(name.substring(1)).appendChild(elem);
+
+		sum(v){ return new vec2(this.x + v.x, this.y + v.y); }
+		diff(v){ return new vec2(this.x - v.x, this.y - v.y); }
+		dot(v){ return this.x * v.x + this.y * v.y; }
+		clone() { return new vec2(this.x, this.y); }
+	}
+
+	class Soldier {
+		constructor(pos, health){
+			this.pos = pos;
+			this.health = HEALTH_MAX | health;
+			this.selected = false;
+			this.moveToPos = undefined;
+			this.moveStartTime = undefined;
+			this.moveFromPos = undefined;
+		}
+
+		moveTo(newPos){
+			this.moveToPos = newPos.clone();
+			this.moveStartTime = new Date();
+			this.moveFromPos = this.pos.clone();
+		}
+
+		draw(time) {
+			if(this.moveToPos){
+				var disp = (time - this.moveStartTime) * SPEED_SOLDIER;
+				var diff = this.moveToPos.diff(this.moveFromPos);
+				if(disp*disp > diff.dot(diff)){
+					this.pos = this.moveToPos.clone();
+				} else {
+					var diffMag = Math.sqrt(diff.dot(diff));
+					this.pos.x = this.moveFromPos.x + (disp * diff.x / diffMag);
+					this.pos.y = this.moveFromPos.y + (disp * diff.y / diffMag);
+				}
+
+				if(this.pos.x === this.moveToPos.x && this.pos.y === this.moveToPos.y){
+					this.moveToPos = undefined;
+					this.moveStartTime = undefined;
+					this.moveFromPos = undefined;
+				}
+			}
+			ctx.fillStyle = COLOR_FG;
+			ctx.beginPath();
+			ctx.arc(this.pos.x, this.pos.y, SIZE_SOLDIER/2, 0, 2*3.14);
+			ctx.fill();
+			ctx.closePath();
+			if(this.selected){
+				var len = Math.floor(this.health * 2 * SIZE_SOLDIER / HEALTH_MAX);
+				var x = this.pos.x - SIZE_SOLDIER, y = this.pos.y - SIZE_SOLDIER;
+				ctx.beginPath();
+				ctx.strokeStyle = COLOR_HEALTH_GONE;
+				ctx.moveTo(x + 2*SIZE_SOLDIER, y);
+				ctx.lineTo(x + len, y);
+				ctx.stroke();
+				ctx.closePath();
+				ctx.beginPath();
+				ctx.strokeStyle = COLOR_HEALTH_REMAIN;
+				ctx.moveTo(x + len, y);
+				ctx.lineTo(x, y);
+				ctx.stroke();
+				ctx.closePath();
 			}
 		}
 	}
-	var clog = console.log;
-	var log = (val) => {
-		$("#logger", "li " + val);
-		$('.right-panel', 0).scrollTop += 1000;
+
+	class CircleEffect {
+		constructor(pos){ 
+			this.pos = pos; 
+			// It is okay not to clone pos here since by implementation, 
+			// we are not modifying it.
+			this.startTime = new Date(); 
+		}
+
+		draw(time) {
+			var dt = time - this.startTime; // milliseconds
+			if(dt > TIME_CIRCLE_DURATION) return false;
+			else {
+				ctx.beginPath();
+				ctx.strokeStyle = COLOR_HEALTH_GONE;
+				ctx.arc(this.pos.x, this.pos.y, dt * SIZE_CIRCLE_EFFECT / TIME_CIRCLE_DURATION, 0, 2*3.14);
+				ctx.stroke();
+				ctx.closePath();
+				return true;
+			}
+		}
 	}
+	
+	class Player {
 
-	var toTitleCase = function (str) {
-        return str.replace(
-            /\w\S*/g,
-            function(txt) {
-                return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            }
-        );
-    }
+		constructor() {
+			// Undefined if not selecting, is a vec2 if selecting
+			this.selectionBox = undefined; 
+			this.mousePos = new vec2(0, 0);
+			this.arr = [];
+			this.effects = [];
+		}
 
-    var arrayToString = function(arr) {
-    	if(!arr || arr.constructor !== Array) return arr;
-    	return arr.reduce((a, s) => a + "<br>" + s);
-    }
+		processInput(e){
+			switch(e.type){
+				case 'mousedown':
+					if(e.button === 0)  // Left click
+						this.selectionBox = new vec2(e.clientX, e.clientY);
+					else if(e.button === 2){
+						var mPos = new vec2(e.clientX, e.clientY);
+						this.effects.push(new CircleEffect(mPos));
+						var sel = this.arr.filter(s => s.selected);
+						sel.forEach((s, idx) => { 
+							s.moveTo(new vec2(mPos.x + (SIZE_SOLDIER*1.5) * (idx - sel.length/2), mPos.y)); 
+						});
+					}
+					break;
+				case 'mouseup':
+					if(e.button === 0) { // Left click
+						this.arr.forEach(s => {
+							if(s.pos.x > this.selectionBox.x && s.pos.x < this.mousePos.x)
+								s.selected = s.pos.y > this.selectionBox.y && s.pos.y < this.mousePos.y;
+							else if(s.pos.x < this.selectionBox.x && s.pos.x > this.mousePos.x)
+								s.selected = s.pos.y < this.selectionBox.y && s.pos.y > this.mousePos.y;
+							else 
+								s.selected = false;
+						});
+						this.selectionBox = undefined;
+					}
+					break;
+				case 'keydown':
+					if(e.key === 'q')
+						this.arr.push(new Soldier(this.mousePos.clone(), 100));
+					break;
+				case 'keyup':
+					break;
+				case 'mousemove':
+					this.mousePos.x = e.clientX;
+					this.mousePos.y = e.clientY;
+					break;
+				default:
+					console.log(e.type);
+			}
+		}
 
-    // Usefule Type Checking Function
-
-	// assert(!!door, true); 
-	//		Fails for null, '', undefined
-	//		Success for any non empty object
-	// assert(door instanceof Door, true);
-	//		Checks for objects that were made using new keyword
-	// assert(typeof name, 'string')
-	//		Checks of type of built in objects
-	// assert(typeof foo, 'function')
-	// 		Also works
-
-    var assert = function(obj1, obj2) {
-    	if(obj1 !== obj2) 
-    		throw Error('Assetion Failed on ' + obj1 + ', ' + obj2);
-    }
+		draw(time){ 
+			if(this.selectionBox !== undefined) {
+				ctx.strokeStyle = COLOR_HEALTH_GONE;
+				ctx.strokeRect(this.mousePos.x, this.mousePos.y, 
+					this.selectionBox.x-this.mousePos.x, this.selectionBox.y-this.mousePos.y );
+			}
+			this.arr.forEach(s => s.draw(time));
+			this.effects.forEach((s, idx) => {
+				if(!s.draw(time)) this.effects.splice(idx, 1);
+			});
+		}
+	}
 </script>
 
 <script type="text/javascript">
-	
+	var s = new Soldier(new vec2(100, 100), 50);
+
+	var p = new Player();
+
+	document.onmouseup = (e) => { p.processInput(e) };
+	document.onmousedown = (e) => { p.processInput(e) };
+	document.onkeydown = (e) => { p.processInput(e) };
+	document.onkeyup = (e) => { p.processInput(e) };
+	document.onmousemove = (e) => { p.processInput(e) };
+	document.oncontextmenu = (e) => {  e.preventDefault(); return false; };
+
+	draw = () => {
+		var time = new Date();
+		ctx.fillStyle = COLOR_BG;
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		p.draw(time);
+		requestAnimationFrame(draw);
+	}
+
+	draw();
+
 </script>
+
+
 </html>
