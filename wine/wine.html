@@ -2,7 +2,6 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<!-- <link href="https://fonts.googleapis.com/css?family=Bree+Serif|Artifika|Major+Mono+Display" rel="stylesheet">  -->
 	<title>Wine War Simulator</title>
 </head>
 <body style="padding: 0; margin: 0;">
@@ -18,13 +17,20 @@
 	const ctx = canvas.getContext("2d");
 
 	const HEALTH_MAX = 100;
-	const COLOR_FG = "#00f";
+	const HEALTH_DAMAGE = 20;
+	const COLOR_SOLDIER = "#00f";
+	const COLOR_ENEMY = "#f00";
 	const COLOR_BG = "#111";
 	const COLOR_HEALTH_REMAIN = "#0f0";
 	const COLOR_HEALTH_GONE = "#f00";
+	const COLOR_HUD = "#ddd";
+	const COLOR_CIRCLE_EFFECT = "rgba(255, 0, 0,";
+	const COLOR_FIRE_EFFECT = "rgba(225, 225, 225,";
 	const SIZE_SOLDIER = 10;
 	const SIZE_CIRCLE_EFFECT = 35;
 	const TIME_CIRCLE_DURATION = 300;
+	const TIME_SOLDIER_FIRERATE = 1000;
+	const TIME_FIRE_EFFECT_DURATION = 1000;
 	const SPEED_SOLDIER = 0.1;
 
 	// Implement Stamina and supplies as well.
@@ -48,6 +54,18 @@
 			this.moveToPos = undefined;
 			this.moveStartTime = undefined;
 			this.moveFromPos = undefined;
+			this.lastAttackTime = new Date();
+		}
+
+		attack(player, enemy) {
+			if(enemy.constructor.name !== "Enemy") return;
+			var time = new Date();
+			if(time - this.lastAttackTime > TIME_SOLDIER_FIRERATE){
+				this.lastAttackTime = time;
+				player.effects.push(new BulletEffect(this.pos.clone(), enemy.pos.clone(), time));
+				enemy.health -= HEALTH_DAMAGE;
+				enemy.selected = true;
+			}
 		}
 
 		moveTo(newPos){
@@ -56,25 +74,24 @@
 			this.moveFromPos = this.pos.clone();
 		}
 
+		getColor() { return COLOR_SOLDIER; }
+
 		draw(time) {
 			if(this.moveToPos){
 				var disp = (time - this.moveStartTime) * SPEED_SOLDIER;
 				var diff = this.moveToPos.diff(this.moveFromPos);
 				if(disp*disp > diff.dot(diff)){
-					this.pos = this.moveToPos.clone();
+					this.moveToPos = undefined;
+					this.moveStartTime = undefined;
+					this.moveFromPos = undefined;
 				} else {
 					var diffMag = Math.sqrt(diff.dot(diff));
 					this.pos.x = this.moveFromPos.x + (disp * diff.x / diffMag);
 					this.pos.y = this.moveFromPos.y + (disp * diff.y / diffMag);
 				}
 
-				if(this.pos.x === this.moveToPos.x && this.pos.y === this.moveToPos.y){
-					this.moveToPos = undefined;
-					this.moveStartTime = undefined;
-					this.moveFromPos = undefined;
-				}
 			}
-			ctx.fillStyle = COLOR_FG;
+			ctx.fillStyle = this.getColor();
 			ctx.beginPath();
 			ctx.arc(this.pos.x, this.pos.y, SIZE_SOLDIER/2, 0, 2*3.14);
 			ctx.fill();
@@ -98,6 +115,14 @@
 		}
 	}
 
+	class Enemy extends Soldier {
+		constructor(pos, health) {
+			super(pos, health);
+		}
+
+		getColor(){ return COLOR_ENEMY; }
+	}
+
 	class CircleEffect {
 		constructor(pos){ 
 			this.pos = pos; 
@@ -107,12 +132,34 @@
 		}
 
 		draw(time) {
-			var dt = time - this.startTime; // milliseconds
-			if(dt > TIME_CIRCLE_DURATION) return false;
+			var dt = (time - this.startTime) / TIME_CIRCLE_DURATION; // milliseconds
+			if(dt > 1.0) return false;
 			else {
 				ctx.beginPath();
-				ctx.strokeStyle = COLOR_HEALTH_GONE;
-				ctx.arc(this.pos.x, this.pos.y, dt * SIZE_CIRCLE_EFFECT / TIME_CIRCLE_DURATION, 0, 2*3.14);
+				ctx.fillStyle = COLOR_CIRCLE_EFFECT + String(1.0 - dt) + ")";
+				ctx.arc(this.pos.x, this.pos.y, dt * SIZE_CIRCLE_EFFECT, 0, 2*3.14);
+				ctx.fill();
+				ctx.closePath();
+				return true;
+			}
+		}
+	}
+
+	class BulletEffect {
+		constructor(posFrom, posTo, timeStart){
+			this.posFrom = posFrom;
+			this.posTo = posTo;
+			this.timeStart = timeStart;
+		}
+
+		draw(time) {
+			var dt = (time - this.timeStart) / TIME_FIRE_EFFECT_DURATION; // milliseconds
+			if(dt > 1.0) return false;
+			else {
+				ctx.beginPath();
+				ctx.strokeStyle = COLOR_FIRE_EFFECT + String(1.0 - dt) + ")";
+				ctx.moveTo(this.posFrom.x, this.posFrom.y);
+				ctx.lineTo(this.posTo.x, this.posTo.y);
 				ctx.stroke();
 				ctx.closePath();
 				return true;
@@ -125,8 +172,11 @@
 		constructor() {
 			// Undefined if not selecting, is a vec2 if selecting
 			this.selectionBox = undefined; 
+			// The number of soldiers you can afford to create
+			this.economy = 10;
 			this.mousePos = new vec2(0, 0);
 			this.arr = [];
+			this.enemies = [];
 			this.effects = [];
 		}
 
@@ -136,11 +186,11 @@
 					if(e.button === 0)  // Left click
 						this.selectionBox = new vec2(e.clientX, e.clientY);
 					else if(e.button === 2){
-						var mPos = new vec2(e.clientX, e.clientY);
-						this.effects.push(new CircleEffect(mPos));
+						this.effects.push(new CircleEffect(this.mousePos));
 						var sel = this.arr.filter(s => s.selected);
 						sel.forEach((s, idx) => { 
-							s.moveTo(new vec2(mPos.x + (SIZE_SOLDIER*1.5) * (idx - sel.length/2), mPos.y)); 
+							s.moveTo(new vec2(this.mousePos.x + (SIZE_SOLDIER*1.5) * (idx - sel.length/2), 
+								this.mousePos.y)); 
 						});
 					}
 					break;
@@ -158,8 +208,28 @@
 					}
 					break;
 				case 'keydown':
-					if(e.key === 'q')
+					if(e.key === 'q') {
+						if(this.economy < 1) return;
 						this.arr.push(new Soldier(this.mousePos.clone(), 100));
+						this.economy--;
+					} else if(e.key === 'a') {
+						this.enemies.push(new Enemy(this.mousePos.clone(), 100));
+					} else if(e.key === 'w'){
+						if(this.enemies.length < 1) return;
+						this.arr.filter(s => s.selected).forEach(s => {
+							var dist = 4 * canvas.width * canvas.height;
+							var idx = -1;
+							this.enemies.forEach((e, i) => {
+								var dx = e.pos.diff(s.pos);
+								if(dx.dot(dx) < dist) {
+									dist = dx.dot(dx);
+									idx = i;
+								}
+							});
+							s.attack(this, this.enemies[idx]);
+						});
+						this.enemies = this.enemies.filter(e => e.health > 0);
+					}
 					break;
 				case 'keyup':
 					break;
@@ -179,15 +249,24 @@
 					this.selectionBox.x-this.mousePos.x, this.selectionBox.y-this.mousePos.y );
 			}
 			this.arr.forEach(s => s.draw(time));
+			this.enemies.forEach(s => s.draw(time));
 			this.effects.forEach((s, idx) => {
 				if(!s.draw(time)) this.effects.splice(idx, 1);
 			});
+
+			ctx.font = "normal 36px Ariel";
+			ctx.fillStyle = COLOR_HUD;
+			ctx.fillText("Economy: " + this.economy, 10, 50);
+			ctx.fillText("Enemies Remaining: " + this.enemies.length, 10, 100);
+			ctx.font = "normal 18px Ariel";
+			ctx.fillText("Spawn Soldier: q", 10, canvas.height - 50);
+			ctx.fillText("Command selected Soldiers to attack: w", 10, canvas.height - 25);
 		}
 	}
 </script>
 
 <script type="text/javascript">
-	var s = new Soldier(new vec2(100, 100), 50);
+	// var s = new Soldier(new vec2(100, 100), 50);
 
 	var p = new Player();
 
