@@ -31,7 +31,9 @@
 	const TIME_CIRCLE_DURATION = 300;
 	const TIME_SOLDIER_FIRERATE = 1000;
 	const TIME_FIRE_EFFECT_DURATION = 1000;
+	const TIMEOUT_HEALTH_BAR = 1000;
 	const SPEED_SOLDIER = 0.1;
+
 
 	// Implement Stamina and supplies as well.
 
@@ -58,13 +60,16 @@
 		}
 
 		attack(player, enemy) {
-			if(enemy.constructor.name !== "Enemy") return;
+			if(enemy.constructor.name !== this.getInverseName()) return;
 			var time = new Date();
 			if(time - this.lastAttackTime > TIME_SOLDIER_FIRERATE){
 				this.lastAttackTime = time;
 				player.effects.push(new BulletEffect(this.pos.clone(), enemy.pos.clone(), time));
 				enemy.health -= HEALTH_DAMAGE;
-				enemy.selected = true;
+				if(enemy.getInverseName() === "Soldier") {
+					enemy.selected = true;
+					setTimeout(() => { enemy.selected = false; }, TIMEOUT_HEALTH_BAR);
+				}
 			}
 		}
 
@@ -75,6 +80,7 @@
 		}
 
 		getColor() { return COLOR_SOLDIER; }
+		getInverseName() { return "Enemy"; }
 
 		draw(time) {
 			if(this.moveToPos){
@@ -89,7 +95,6 @@
 					this.pos.x = this.moveFromPos.x + (disp * diff.x / diffMag);
 					this.pos.y = this.moveFromPos.y + (disp * diff.y / diffMag);
 				}
-
 			}
 			ctx.fillStyle = this.getColor();
 			ctx.beginPath();
@@ -121,6 +126,7 @@
 		}
 
 		getColor(){ return COLOR_ENEMY; }
+		getInverseName() { return "Soldier"; }
 	}
 
 	class CircleEffect {
@@ -228,7 +234,9 @@
 							});
 							s.attack(this, this.enemies[idx]);
 						});
+						var before = this.enemies.length;
 						this.enemies = this.enemies.filter(e => e.health > 0);
+						this.economy = this.economy + (before - this.enemies.length)/2;
 					}
 					break;
 				case 'keyup':
@@ -285,7 +293,18 @@
 		requestAnimationFrame(draw);
 	}
 
+	ai = () => {
+		setTimeout(ai, 1500);
+		if(p.arr.length < 1) return;
+		var len = p.arr.length;
+		p.enemies.forEach(s => {
+			s.attack(p, p.arr[Math.floor((len-1) * Math.random())]);
+		});
+		p.arr = p.arr.filter(s => s.health > 0);
+	}
+
 	draw();
+	ai();
 
 </script>
 

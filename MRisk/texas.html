@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"> 
+	<title>MRisk - A Modified Risk Game</title>
+</head>
+<body style="margin: 0; text-align: center; padding-top: 2.5%;">
+
+	<canvas id="canvas"></canvas>
+
+</body>
+
+<script type="text/javascript"> 
+	// These are some utility functions to make life easier
+	// The game doesn't depend upon them
+
+	// $() -> 							document
+	// $(".abc") -> 					HTMLCollection with all elements that have class 'abc'
+	// $(".abc", n) -> 					nth node in HTMLCollection with all 
+	//									elements that have class 'abc'
+	// $("#fgh") -> 					element with id "fgh"
+	// $("#fgh", 'li some string') -> 	insert 'li' node with innerHTML = 'some string' 
+	//									into element whose id is 'fgh'
+
+	$ = (name, idx) => {
+		if(!name || name === '') return document;
+		else if(name.startsWith('.')) {
+			var docs = document.getElementsByClassName(name.substring(1));
+			if(isNaN(idx)) return docs;
+			else return docs[idx];
+		}
+		else if(name.startsWith('#')) {
+			if(!idx)
+				return document.getElementById(name.substring(1));
+			else {
+				var idxFirstSpace = idx.indexOf(" ");
+				var tag = idx.substring(0, idxFirstSpace);
+				var args = idx.substring(idxFirstSpace + 1);
+				var elem = document.createElement(tag);
+				elem.innerHTML = args;
+				elem.animate([ {opacity: 0}, {opacity: 100} ], {duration: 250});
+				document.getElementById(name.substring(1)).appendChild(elem);
+			}
+		}
+	}
+	clog = console.log;
+
+    // Usefule Type Checking Function
+
+	// assert(!!door, true); 
+	//		Fails for null, '', undefined
+	//		Success for any non empty object
+	// assert(door instanceof Door, true);
+	//		Checks for objects that were made using new keyword
+	// assert(typeof name, 'string')
+	//		Checks of type of built in objects
+	// assert(typeof foo, 'function')
+	// 		Also works
+
+    assert = function(obj1, obj2, msg) {
+    	if(obj1 === NotEmpty && !obj2)
+    		throw Error(msg);
+    	if(obj2 === NotEmpty && !obj1)
+    		throw Error(msg);
+    	if(obj1 !== obj2 && obj1 !== NotEmpty && obj2 != NotEmpty) 
+    		throw Error(msg);
+    }
+
+    // A special long unique string to ensure non empty objects using assrt()
+    NotEmpty = 'ODH@<)UD@D(@#>DJIJEIDKLADJ<@UD(UD>KLDM:LEDJ';
+
+    // Define constant object members
+
+    final = (obj, key, value) => {
+    	assert(obj, NotEmpty, 'Object cannot be empty');
+    	assert(key, NotEmpty, 'Key cannot be empty');
+		Object.defineProperty( obj, key, {
+			value: value,
+			writable: false,
+			enumerable: true,
+			configurable: true
+		}); // Makes obj.<key> unwritable and final
+    }
+
+</script>
+
+<script type="text/javascript">
+	class Zone {
+		constructor(name, neighbours){
+			assert(name, NotEmpty, 'Name of Zone cannot be empty');
+			assert(typeof name, 'string', 'Name of Zone should be a String');
+			assert(neighbours.constructor.name, 'Array', 'Neihbous should be array');
+			neighbours.forEach(s => { assert(typeof s, 'string', 'Neighbours should be names'); })
+			final(this, 'name', name);
+			final(this, 'neighbours', neighbours);
+		}
+
+		isNeighbour(name) { return this.neighbours.find(s => s === name) !== undefined; }
+		draw(ctx, x, y, w, h, fs) {
+			ctx.fillStyle = "#333";
+			ctx.fillRect(x, y, w, h);
+			ctx.fillStyle = "#fff";
+			ctx.fillText(this.name, x + (w - this.name.length * fs)/2, y + h/2);
+		}
+	}
+
+	class GameMap {
+		constructor(zones){
+			assert(zones.constructor.name, 'Array', 'Zones has to be an array of Zones');
+			zones.forEach(s => { assert(s.constructor.name, "Zone", 'Every zone is a zone'); });
+			if(zones.length < 2) throw Error("Lol Map this is");
+			final(this, 'zones', zones);
+		}
+
+		getZone (name) { return this.zones.find(s => s.name === name); }
+		areNeighbours(name1, name2) { return this.getZone(name1).isNeighbour(name2); }
+
+		draw(ctx, width, height){
+			// Draw the map on the first 60% of the screen
+			let maxX = Math.floor(width * 0.6), maxY = Math.floor(height);
+			let n = Math.floor(Math.sqrt(this.zones.length));
+			let w = Math.floor(maxX / n / 2), h = Math.floor(maxY / n / 2);
+			let fontSize = Math.floor(Math.sqrt(w * h)/10);
+
+			ctx.font = fontSize + "px Georgia";
+			this.getZone("London").draw(ctx, 0, 0, w, h, fontSize);
+			this.getZone("Paris").draw(ctx, w, h, w, h, fontSize);
+			this.getZone("Berlin").draw(ctx, 2*w, h, w, h, fontSize);
+			this.getZone("Moscow").draw(ctx, 3*w, 2*h, w, h, fontSize);
+			this.getZone("Amsterdam").draw(ctx, 3*w, 0, w, h, fontSize);
+		}
+		
+	}
+
+	let ZONES = [
+		new Zone('Paris', ['London', 'Berlin']),
+		new Zone('London', ['Paris']),
+		new Zone('Berlin', ['Paris', 'Moscow', 'Amsterdam']),
+		new Zone('Moscow', ['Berlin']),
+		new Zone('Amsterdam', ['Berlin'])
+	]
+
+	let MAP = new GameMap(ZONES);
+
+</script>
+
+<script type="text/javascript">
+	canvas = $("#canvas");
+	canvas.width = Math.floor(window.innerWidth * 0.9);
+	canvas.height = Math.floor(window.innerHeight * 0.9);
+	ctx = canvas.getContext('2d');
+
+	camera = {
+		x: 0, y: 0
+	}
+	mouse = {
+		lastPos: {x: 0, y: 0},
+		leftDown: false
+	}
+
+	width = canvas.width; height = canvas.height;
+	time = 0;
+
+	document.addEventListener('mousemove',(e) =>{
+		if(mouse.leftDown){
+			camera.x += e.clientX - mouse.lastPos.x;
+			camera.y += e.clientY - mouse.lastPos.y;
+		}
+		mouse.lastPos.x = e.clientX;
+		mouse.lastPos.y = e.clientY;
+	});
+	document.addEventListener('mousedown', (e) => {
+		if(e.button === 0) mouse.leftDown = true;
+	});
+	document.addEventListener('mouseup', (e) => {
+		if(e.button === 0) mouse.leftDown = false;
+	})
+
+</script>
+
+<script type="text/javascript">
+	draw = () => {
+		ctx.translate(camera.x, camera.y);
+		time++;
+
+		ctx.fillStyle = "#000";
+		ctx.fillRect(0, 0, width, height);
+
+		MAP.draw(ctx, width, height);
+
+		ctx.strokeStyle = "#fff";
+		ctx.beginPath();
+		ctx.arc(width/2, height/2, Math.min(width, height)/4, time / 10, time /10 + 1.57);
+		ctx.stroke();
+		ctx.closePath();
+
+
+		ctx.translate(-camera.x, -camera.y);
+		requestAnimationFrame(draw);
+	}
+
+	draw();
+</script>
+</html>
