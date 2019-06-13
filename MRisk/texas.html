@@ -102,7 +102,7 @@
 		isNeighbour(name) { return this.neighbours.find(s => s === name) !== undefined; }
 		draw(ctx, w, h) { ctx.fillRect(this.x, this.y, w, h); }
 		drawNames(ctx, w, h, fs) { 
-			ctx.fillText(this.name, this.x + (w - this.name.length * fs)/5, this.y + h/2); 
+			ctx.fillText(this.name, this.x, this.y + h/2); 
 		}
 	}
 
@@ -171,13 +171,14 @@
 	})
 
 	draw = () => {
-		ctx.translate(camera.x, camera.y);
 		time++;
-
 		ctx.fillStyle = "#000";
 		ctx.fillRect(0, 0, width, height);
 
+		ctx.translate(camera.x, camera.y);
+
 		MAP.draw(ctx, width, height);
+		ctx.translate(-camera.x, -camera.y);
 
 		ctx.strokeStyle = "#fff";
 		ctx.beginPath();
@@ -186,7 +187,6 @@
 		ctx.closePath();
 
 
-		ctx.translate(-camera.x, -camera.y);
 		requestAnimationFrame(draw);
 	}
 </script>
@@ -196,21 +196,53 @@
 	// Draw the map on the first 80% of the screen
 	let w = Math.floor(width * 0.8 / 10);
 	let h = Math.floor(height / 10);
-	let fontSize = Math.floor(Math.sqrt(w * h)/2.5);
+	let fontSize = Math.floor(Math.sqrt(w * h)/4.5);
 
 	let ZONES = [
-		new Zone('Paris', 		1*w, 2*h, ['London', 'Brussels', 'Stuttgart', 'Nantes']),
-		new Zone('London', 		0*w, 1*h, ['Paris']),
-		new Zone('Berlin', 		5*w, 2*h, ['Moscow', 'Amsterdam']),
-		new Zone('Moscow', 		5*w, 3*h, ['Berlin']),
-		new Zone('Amsterdam', 	4*w, 1*h, ['Berlin', 'Hague']),
-		new Zone('Brussels', 	2*w, 1*h, ['Paris', 'Hague']),
-		new Zone('Stuttgart', 	2*w, 3*h, ['Paris']),
-		new Zone('Nantes', 		0*w, 3*h, ['Paris']),
-		new Zone('Hague', 		3*w, 0*h, ['Brussels', 'Amsterdam']),
+		new Zone('Paris', 		1*w, 2*h, ['London', 'Brussels', 'Stuttgart', 'Nantes', 'Geneva']),
+		new Zone('London', 		0*w, 1*h, ['Paris', 'Manchester', 'Plymouth']),
+		new Zone('Manchester',	-1*w, 0*h, ['London', 'Dublin']),
+		new Zone('Dublin',		-2*w, 1*h, ['Manchester', 'Plymouth']),
+		new Zone('Plymouth',	-1*w, 2*h, ['Dublin', 'London', 'Nantes']),
+		new Zone('Berlin', 		4*w, 2*h, ['Prague', 'Hamburg', 'Warsaw', 'Frankfurt', 'Munich', 'Hague']),
+		new Zone('Minsk', 		6*w, 2*h, ['Warsaw', 'Moscow', 'Kyiv', 'Riga']),
+		new Zone('Moscow', 		7*w, 2*h, ['Minsk', "Kyiv", 'Riga']),
+		new Zone('Riga', 		6*w, 1*h, ['Minsk', 'Moscow', 'Helsinki']),
+		new Zone('Helsinki',	6*w, 0*h, ['Riga', 'Stockholm']),
+		new Zone('Stockholm',	5*w, -1*h, ['Helsinki', 'Copenhagen']),
+		new Zone('Vienna', 		4*w, 4*h, ['Prague', 'Warsaw', 'Budapest', 'Munich', 'Graz', 'Krakow']),
+		new Zone('Krakow', 		5*w, 4*h, ['Vienna', 'Warsaw', 'Budapest', 'Prague', 'Kyiv', 'Bucharest']),
+		new Zone('Budapest',	5*w, 5*h, ['Vienna', 'Krakow', 'Bucharest', 'Sarajevo', 'Isanbul', 'Athens']),
+		new Zone('Sarajevo',	4*w, 6*h, ['Budapest', 'Athens']),
+		new Zone('Bucharest',	6*w, 5*h, ['Budapest', 'Krakow', 'Isanbul', 'Athens']),
+		new Zone('Isanbul',		6*w, 6*h, ['Bucharest', 'Budapest', 'Athens']),
+		new Zone('Athens',		5*w, 6*h, ['Bucharest', 'Budapest', 'Isanbul', 'Sarajevo']),
+		new Zone('Prague', 		4*w, 3*h, ['Berlin', 'Frankfurt', 'Vienna', 'Munich', 'Graz', 'Krakow', 'Warsaw']),
+		new Zone('Warsaw', 		5*w, 3*h, ['Berlin', 'Vienna', 'Minsk', 'Kyiv', 'Krakow', 'Prague']),
+		new Zone('Kyiv', 		6*w, 3*h, ['Warsaw', 'Moscow', 'Minsk', 'Krakow']),
+		new Zone('Hamburg', 	4*w, 1*h, ['Berlin', 'Hague', 'Frankfurt', 'Copenhagen']),
+		new Zone('Copenhagen', 	4*w, 0*h, ['Hamburg', 'Stockholm', 'Hague']),
+		new Zone('Brussels', 	2*w, 1*h, ['Paris', 'Hague', 'Frankfurt']),
+		new Zone('Stuttgart', 	2*w, 3*h, ['Paris', 'Frankfurt', 'Geneva', 'Munich', 'Graz', 'Milan']),
+		new Zone('Nantes', 		0*w, 3*h, ['Paris', 'Geneva', 'Plymouth', 'Marseille', 'Barcelona']),
+		new Zone('Marseille',	0*w, 4*h, ['Nantes', 'Geneva', 'Monaco', 'Barcelona']),
+		new Zone('Barcelona',	-1*w, 4*h, ['Marseille', 'Nantes', 'Madrid']),
+		new Zone('Madrid',		-2*w, 5*h, ['Barcelona', 'Lisbon', 'Porto']),
+		new Zone('Lisbon',		-3*w, 5*h, ['Madrid', 'Porto']),
+		new Zone('Porto',		-3*w, 4*h, ['Madrid', 'Lisbon']),
+		new Zone('Geneva', 		1*w, 3*h, ['Paris', 'Nantes', 'Stuttgart', 'Milan', 'Marseille']),
+		new Zone('Monaco', 		1*w, 5*h, ['Milan', 'Marseille', 'Venice', 'Rome']),
+		new Zone('Venice', 		2*w, 5*h, ['Milan', 'Monaco', 'Graz', 'Rome']),
+		new Zone('Rome', 		2*w, 6*h, ['Venice', 'Monaco']),
+		new Zone('Hague', 		3*w, 1*h, ['Brussels', 'Hamburg', 'Frankfurt', 'Copenhagen', 'Berlin']),
+		new Zone('Frankfurt', 	3*w, 2*h, ['Brussels', 'Stuttgart', 'Hamburg', 'Prague', 'Berlin', 'Hague', 'Munich']),
+		new Zone('Munich', 		3*w, 3*h, ['Stuttgart', 'Frankfurt', 'Vienna', 'Prague', 'Berlin', 'Graz', 'Milan']),
+		new Zone('Graz', 		3*w, 4*h, ['Stuttgart', 'Munich', 'Vienna', 'Prague', 'Milan', 'Venice']),
+		new Zone('Milan', 		2*w, 4*h, ['Geneva', 'Stuttgart', 'Munich', 'Graz', 'Monaco', 'Venice']),
 	]
 
 	let MAP = new GameMap(ZONES);
+	clog(ZONES.length);
 	draw();
 </script>
 </html>
