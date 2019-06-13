@@ -25,7 +25,7 @@
 	$ = (name, idx) => {
 		if(!name || name === '') return document;
 		else if(name.startsWith('.')) {
-			var docs = document.getElementsByClassName(name.substring(1));
+			let docs = document.getElementsByClassName(name.substring(1));
 			if(isNaN(idx)) return docs;
 			else return docs[idx];
 		}
@@ -33,10 +33,10 @@
 			if(!idx)
 				return document.getElementById(name.substring(1));
 			else {
-				var idxFirstSpace = idx.indexOf(" ");
-				var tag = idx.substring(0, idxFirstSpace);
-				var args = idx.substring(idxFirstSpace + 1);
-				var elem = document.createElement(tag);
+				let idxFirstSpace = idx.indexOf(" ");
+				let tag = idx.substring(0, idxFirstSpace);
+				let args = idx.substring(idxFirstSpace + 1);
+				let elem = document.createElement(tag);
 				elem.innerHTML = args;
 				elem.animate([ {opacity: 0}, {opacity: 100} ], {duration: 250});
 				document.getElementById(name.substring(1)).appendChild(elem);
@@ -143,7 +143,7 @@
 		getZoneAt(x, y) {
 			for(let z of this.zones) {
 				if(z.x < x && z.x + w > x){
-					if(z.y < y && z.y + w > y) return z;
+					if(z.y < y && z.y + h > y) return z;
 				}
 			}
 		}
@@ -155,6 +155,12 @@
 			this.zones.forEach(s => { s.draw(ctx, w, h); });
 			ctx.fillStyle = "#fff";
 			this.zones.forEach(s => { s.drawNames(ctx, w, h, fontSize); });
+		}
+
+		randomlyAlotPlayers() {
+			let rem = ZONES.filter(s => s.master === null);
+			let len = PLAYERS.length;
+			rem.forEach(s => { s.master = PLAYERS[Math.floor(len * Math.random())]; });
 		}
 		
 	}
@@ -209,7 +215,7 @@
 <script type="text/javascript">
 	canvas = $("#canvas");
 	canvas.width = Math.floor(window.innerWidth);
-	canvas.height = Math.floor(window.innerHeight * 0.99);
+	canvas.height = Math.floor(window.innerHeight * 0.999);
 	ctx = canvas.getContext('2d');
 
 	camera = {
@@ -217,7 +223,7 @@
 	}
 	mouse = {
 		lastPos: {x: 0, y: 0},
-		leftDown: false
+		rightDown: false
 	}
 
 	width = canvas.width; height = canvas.height;
@@ -226,7 +232,7 @@
 	zonePickCallBack = undefined;
 
 	document.addEventListener('mousemove',(e) =>{
-		if(mouse.leftDown){
+		if(mouse.rightDown){
 			camera.x += e.clientX - mouse.lastPos.x;
 			camera.y += e.clientY - mouse.lastPos.y;
 		}
@@ -234,16 +240,16 @@
 		mouse.lastPos.y = e.clientY;
 	});
 	document.addEventListener('mousedown', (e) => {
-		if(e.button === 2 && zonePickCallBack){
+		if(e.button === 0 && zonePickCallBack){
 			let zone = MAP.getZoneAt(e.clientX - camera.x, e.clientY - camera.y);
 			let f = zonePickCallBack;
 			zonePickCallBack = undefined;
 			f(zone);
 		}
-		if(e.button === 0) mouse.leftDown = true;
+		if(e.button === 2) mouse.rightDown = true;
 	});
 	document.addEventListener('mouseup', (e) => {
-		if(e.button === 0) mouse.leftDown = false;
+		if(e.button === 2) mouse.rightDown = false;
 	});
 
 	pickZone = (callback) => {
@@ -310,8 +316,8 @@
 		new Zone('Madrid',		-2*w, 5*h, ['Barcelona', 'Lisbon', 'Porto']),
 		new Zone('Lisbon',		-3*w, 5*h, ['Madrid', 'Porto']),
 		new Zone('Porto',		-3*w, 4*h, ['Madrid', 'Lisbon']),
-		new Zone('Geneva', 		1*w, 3*h, ['Paris', 'Nantes', 'Stuttgart', 'Milan', 'Marseille']),
-		new Zone('Monaco', 		1*w, 5*h, ['Milan', 'Marseille', 'Venice', 'Rome']),
+		new Zone('Geneva', 		1*w, 3*h, ['Paris', 'Nantes', 'Stuttgart', 'Milan', 'Marseille', 'Monaco']),
+		new Zone('Monaco', 		1*w, 4*h, ['Milan', 'Marseille', 'Venice', 'Rome', 'Geneva']),
 		new Zone('Venice', 		2*w, 5*h, ['Milan', 'Monaco', 'Graz', 'Rome']),
 		new Zone('Rome', 		2*w, 6*h, ['Venice', 'Monaco']),
 		new Zone('Hague', 		3*w, 1*h, ['Brussels', 'Hamburg', 'Frankfurt', 'Copenhagen', 'Berlin']),
@@ -336,7 +342,9 @@
 			changePlayer();
 			curPlayer().choseCapital(() => {
 				changePlayer();
-				curPlayer().choseCapital(() => {});
+				curPlayer().choseCapital(() => {
+					setTimeout(MAP.randomlyAlotPlayers, 1);
+				});
 			});
 		});
 	});
