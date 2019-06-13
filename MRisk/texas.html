@@ -4,7 +4,7 @@
 	<meta charset="utf-8"> 
 	<title>MRisk - A Modified Risk Game</title>
 </head>
-<body style="margin: 0; text-align: center; padding-top: 2.5%;">
+<body style="margin: 0; text-align: center;" oncontextmenu="return false">
 
 	<canvas id="canvas"></canvas>
 
@@ -97,10 +97,26 @@
 			final(this, 'neighbours', neighbours);
 			final(this, 'x', x);
 			final(this, 'y', y);
+			this.master = null;
+			this.highlighted = false;
 		}
 
 		isNeighbour(name) { return this.neighbours.find(s => s === name) !== undefined; }
-		draw(ctx, w, h) { ctx.fillRect(this.x, this.y, w, h); }
+		draw(ctx, w, h) {
+			ctx.fillRect(this.x, this.y, w, h); 
+			if(this.master !== null){
+				let temp = ctx.fillStyle;
+				ctx.fillStyle = this.master.color + '3';
+				ctx.fillRect(this.x, this.y, w, h); 
+				ctx.fillStyle = temp;	
+			}
+			if(this.highlighted){
+				let temp = ctx.fillStyle;
+				ctx.fillStyle = "#fff6";
+				ctx.fillRect(this.x, this.y, w, h); 
+				ctx.fillStyle = temp;
+			}
+		}
 		drawNames(ctx, w, h, fs) { 
 			ctx.fillText(this.name, this.x, this.y + h/2); 
 		}
@@ -124,6 +140,13 @@
 
 		getZone (name) { return this.zones.find(s => s.name === name); }
 		areNeighbours(name1, name2) { return this.getZone(name1).isNeighbour(name2); }
+		getZoneAt(x, y) {
+			for(let z of this.zones) {
+				if(z.x < x && z.x + w > x){
+					if(z.y < y && z.y + w > y) return z;
+				}
+			}
+		}
 
 		draw(ctx, width, height){
 
@@ -136,16 +159,61 @@
 		
 	}
 
+	class Player {
+		constructor(color, numPlayers){
+			assert(color, NotEmpty, 'Color Cannot be Empty');
+			assert(color.charAt(0), '#', 'Color must be a hex code');
+			final(this, 'color', color);
+			final(this, 'zones', []);
+			this.capital = null;
+			if(numPlayers === 2)
+				this.capital2 = null;
+		}
+
+		choseCapital(callback) {
+			assert(typeof callback, 'function', 'Callback should be function.');
+			let choices = MAP.zones
+				.filter(s => s.master === null)
+				.sort(s => 0.5 < Math.random())
+				.slice(0, 10);
+			choices.forEach(s => { s.highlighted = true; });
+			let self = this;
+			let f = (z => {
+				if(choices.includes(z)){
+					if(!this.capital) this.capital = z;
+					else if(!this.capital2) this.capital2 = z;
+					z.master = self;
+					choices.forEach(s => { s.highlighted = false; });
+					callback();
+				}
+				else pickZone(f);
+			});
+			pickZone(f);
+		}
+
+		draw(ctx) {
+			if(this.capital){
+				ctx.fillStyle = this.color;
+				ctx.fillRect(this.capital.x, this.capital.y, w, h/10);
+ 			}
+			if(this.capital2){
+				ctx.fillStyle = this.color;
+				ctx.fillRect(this.capital2.x, this.capital2.y, w, h/10);
+ 			}
+
+		}
+	}
+
 </script>
 
 <script type="text/javascript">
 	canvas = $("#canvas");
-	canvas.width = Math.floor(window.innerWidth * 0.9);
-	canvas.height = Math.floor(window.innerHeight * 0.9);
+	canvas.width = Math.floor(window.innerWidth);
+	canvas.height = Math.floor(window.innerHeight * 0.99);
 	ctx = canvas.getContext('2d');
 
 	camera = {
-		x: 0, y: 0
+		x: 350, y: 100
 	}
 	mouse = {
 		lastPos: {x: 0, y: 0},
@@ -154,6 +222,8 @@
 
 	width = canvas.width; height = canvas.height;
 	time = 0;
+
+	zonePickCallBack = undefined;
 
 	document.addEventListener('mousemove',(e) =>{
 		if(mouse.leftDown){
@@ -164,11 +234,22 @@
 		mouse.lastPos.y = e.clientY;
 	});
 	document.addEventListener('mousedown', (e) => {
+		if(e.button === 2 && zonePickCallBack){
+			let zone = MAP.getZoneAt(e.clientX - camera.x, e.clientY - camera.y);
+			let f = zonePickCallBack;
+			zonePickCallBack = undefined;
+			f(zone);
+		}
 		if(e.button === 0) mouse.leftDown = true;
 	});
 	document.addEventListener('mouseup', (e) => {
 		if(e.button === 0) mouse.leftDown = false;
-	})
+	});
+
+	pickZone = (callback) => {
+		assert(typeof callback, 'function', 'Zone pick should be a function');
+		zonePickCallBack = callback;
+	}
 
 	draw = () => {
 		time++;
@@ -176,8 +257,8 @@
 		ctx.fillRect(0, 0, width, height);
 
 		ctx.translate(camera.x, camera.y);
-
 		MAP.draw(ctx, width, height);
+		PLAYERS.forEach(s => s.draw(ctx));
 		ctx.translate(-camera.x, -camera.y);
 
 		ctx.strokeStyle = "#fff";
@@ -185,7 +266,6 @@
 		ctx.arc(width/2, height/2, Math.min(width, height)/4, time / 10, time /10 + 1.57);
 		ctx.stroke();
 		ctx.closePath();
-
 
 		requestAnimationFrame(draw);
 	}
@@ -242,7 +322,25 @@
 	]
 
 	let MAP = new GameMap(ZONES);
-	clog(ZONES.length);
+
+	let PLAYERS = [ new Player("#f00"), new Player("#0f0") ];
+
+	let currentPlayerIndex = 0;
+
+	curPlayer = () => { return PLAYERS[currentPlayerIndex]; }
+	changePlayer = () => { currentPlayerIndex = (currentPlayerIndex) ? 0 : 1; }
+
+	curPlayer().choseCapital(() => {
+		changePlayer();
+		curPlayer().choseCapital(() => {
+			changePlayer();
+			curPlayer().choseCapital(() => {
+				changePlayer();
+				curPlayer().choseCapital(() => {});
+			});
+		});
+	});
+
 	draw();
 </script>
 </html>
