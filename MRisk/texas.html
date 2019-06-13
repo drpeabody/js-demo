@@ -86,21 +86,23 @@
 
 <script type="text/javascript">
 	class Zone {
-		constructor(name, neighbours){
+		constructor(name, x, y, neighbours){
 			assert(name, NotEmpty, 'Name of Zone cannot be empty');
 			assert(typeof name, 'string', 'Name of Zone should be a String');
 			assert(neighbours.constructor.name, 'Array', 'Neihbous should be array');
+			assert(typeof x === 'number' && !isNaN(x), true, 'X should be a valid number');
+			assert(typeof y === 'number' && !isNaN(y), true, 'Y should be a valid number');
 			neighbours.forEach(s => { assert(typeof s, 'string', 'Neighbours should be names'); })
 			final(this, 'name', name);
 			final(this, 'neighbours', neighbours);
+			final(this, 'x', x);
+			final(this, 'y', y);
 		}
 
 		isNeighbour(name) { return this.neighbours.find(s => s === name) !== undefined; }
-		draw(ctx, x, y, w, h, fs) {
-			ctx.fillStyle = "#333";
-			ctx.fillRect(x, y, w, h);
-			ctx.fillStyle = "#fff";
-			ctx.fillText(this.name, x + (w - this.name.length * fs)/2, y + h/2);
+		draw(ctx, w, h) { ctx.fillRect(this.x, this.y, w, h); }
+		drawNames(ctx, w, h, fs) { 
+			ctx.fillText(this.name, this.x + (w - this.name.length * fs)/5, this.y + h/2); 
 		}
 	}
 
@@ -110,37 +112,29 @@
 			zones.forEach(s => { assert(s.constructor.name, "Zone", 'Every zone is a zone'); });
 			if(zones.length < 2) throw Error("Lol Map this is");
 			final(this, 'zones', zones);
+
+			// Verify that the adjecency lists are symmetric
+			zones.forEach(s => { 
+				s.neighbours.forEach(t => {
+					let tzone = zones.find(z => z.name === t);
+					assert(tzone.isNeighbour(s.name), true, t + ' should be a neighbour of ' + s.name);
+				});
+			});
 		}
 
 		getZone (name) { return this.zones.find(s => s.name === name); }
 		areNeighbours(name1, name2) { return this.getZone(name1).isNeighbour(name2); }
 
 		draw(ctx, width, height){
-			// Draw the map on the first 60% of the screen
-			let maxX = Math.floor(width * 0.6), maxY = Math.floor(height);
-			let n = Math.floor(Math.sqrt(this.zones.length));
-			let w = Math.floor(maxX / n / 2), h = Math.floor(maxY / n / 2);
-			let fontSize = Math.floor(Math.sqrt(w * h)/10);
 
 			ctx.font = fontSize + "px Georgia";
-			this.getZone("London").draw(ctx, 0, 0, w, h, fontSize);
-			this.getZone("Paris").draw(ctx, w, h, w, h, fontSize);
-			this.getZone("Berlin").draw(ctx, 2*w, h, w, h, fontSize);
-			this.getZone("Moscow").draw(ctx, 3*w, 2*h, w, h, fontSize);
-			this.getZone("Amsterdam").draw(ctx, 3*w, 0, w, h, fontSize);
+			ctx.fillStyle = "#333";
+			this.zones.forEach(s => { s.draw(ctx, w, h); });
+			ctx.fillStyle = "#fff";
+			this.zones.forEach(s => { s.drawNames(ctx, w, h, fontSize); });
 		}
 		
 	}
-
-	let ZONES = [
-		new Zone('Paris', ['London', 'Berlin']),
-		new Zone('London', ['Paris']),
-		new Zone('Berlin', ['Paris', 'Moscow', 'Amsterdam']),
-		new Zone('Moscow', ['Berlin']),
-		new Zone('Amsterdam', ['Berlin'])
-	]
-
-	let MAP = new GameMap(ZONES);
 
 </script>
 
@@ -176,9 +170,6 @@
 		if(e.button === 0) mouse.leftDown = false;
 	})
 
-</script>
-
-<script type="text/javascript">
 	draw = () => {
 		ctx.translate(camera.x, camera.y);
 		time++;
@@ -198,7 +189,28 @@
 		ctx.translate(-camera.x, -camera.y);
 		requestAnimationFrame(draw);
 	}
+</script>
 
+<script type="text/javascript">
+
+	// Draw the map on the first 80% of the screen
+	let w = Math.floor(width * 0.8 / 10);
+	let h = Math.floor(height / 10);
+	let fontSize = Math.floor(Math.sqrt(w * h)/2.5);
+
+	let ZONES = [
+		new Zone('Paris', 		1*w, 2*h, ['London', 'Brussels', 'Stuttgart', 'Nantes']),
+		new Zone('London', 		0*w, 1*h, ['Paris']),
+		new Zone('Berlin', 		5*w, 2*h, ['Moscow', 'Amsterdam']),
+		new Zone('Moscow', 		5*w, 3*h, ['Berlin']),
+		new Zone('Amsterdam', 	4*w, 1*h, ['Berlin', 'Hague']),
+		new Zone('Brussels', 	2*w, 1*h, ['Paris', 'Hague']),
+		new Zone('Stuttgart', 	2*w, 3*h, ['Paris']),
+		new Zone('Nantes', 		0*w, 3*h, ['Paris']),
+		new Zone('Hague', 		3*w, 0*h, ['Brussels', 'Amsterdam']),
+	]
+
+	let MAP = new GameMap(ZONES);
 	draw();
 </script>
 </html>
