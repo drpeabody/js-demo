@@ -97,7 +97,9 @@
 			final(this, 'neighbours', neighbours);
 			final(this, 'x', x);
 			final(this, 'y', y);
-			this.infantry = 1;
+			this.Infantry = 1;
+			this.Cavalry = 0;
+			this.Artillery = 0;
 			this.master = null;
 			this.highlighted = false;
 		}
@@ -116,7 +118,7 @@
 			ctx.fillText(this.name, this.x, this.y + h/2); 
 		}
 		drawArmies(ctx, w, h, fs) {
-			ctx.fillText(this.infantry, this.x, this.y + h/2 + fs); 	
+			ctx.fillText(`${this.Infantry} - ${this.Cavalry} - ${this.Artillery}`, this.x, this.y + h/2 + fs); 	
 		}
 	}
 
@@ -404,14 +406,24 @@
 		},
 
 		showAddButtons: () => {
-			HUD.buttons.push(new Button("Infantry", width * 0.05, height * 0.65, width*0.075, height*0.1));
+			HUD.buttons = HUD.buttons.concat([
+				new Button("Infantry", width * 0.05, height * 0.65, width*0.075, height*0.1),
+				new Button("Cavalry", width * 0.15, height * 0.65, width*0.075, height*0.1),
+				new Button("Artillery", width * 0.25, height * 0.65, width*0.075, height*0.1),
+			]);
 		},
 		hideAddButtons: () => {
-			HUD.buttons = HUD.buttons.filter(s => s.name !== "Infantry");
+			HUD.buttons = HUD.buttons.filter(s => 
+				s.name !== "Infantry" && 
+				s.name !== "Cavalry" && 
+				s.name !== "Artillery"
+			);
 		}
 	}
 
-	let COST_INFANTRY = 1, COST_CAVALRY = 3, COST_ARTILLERY = 5;
+	let COST_TROOP = {
+		'Infantry': 1, 'Cavalry': 3, 'Artillery': 5
+	};
 	let currentPlayerIndex = 0;
 
 	curPlayer = () => { return PLAYERS[currentPlayerIndex]; }
@@ -444,35 +456,36 @@
 		let player = curPlayer();
 
 		let btnCall = (btn) => {
-			if(!btn || !btn.name === 'Add') {
+			if(!btn || btn.name !== 'Add') {
 				pressButton(btnCall);
 				return;
 			}
 			HUD.showAddButtons();
 			HUD.label = 'Choose Infantry, Cavalry, or Artillery. Click anywhere else to cancel.';
 			pressButton((b) => {
-				if(!b || b.name !== 'Infantry') {
+				if(!b || (b.name !== 'Infantry' && b.name !== 'Cavalry' && b.name !== 'Artillery')) {
 					HUD.hideAddButtons();
 					pressButton(btnCall);
 					return;
 				}
-				HUD.label = 'Choose a territory to place your infantry.';
+				let troop = b.name;
+				HUD.label = `Choose a territory to place your ${troop}.`;
 				MAP.highlight(s => s.master === player, true);
 				zoneCallback = (zone) => {
 					if(zone && zone.master === player) {
 						HUD.label = 'You have chosen ' + zone.name + '.';
-						let num = parseInt(prompt("Enter the number of " + b.name + " to add to " + zone.name));
-						if(isNaN(num) || player.gold - num * COST_INFANTRY < 0){
-							HUD.label = 'Choose a territory to place your infantry.';
+						let num = parseInt(prompt("Enter the number of " + troop + " to add to " + zone.name));
+						if(isNaN(num) || player.gold - num * COST_TROOP[troop] < 0){
+							HUD.label = `Choose a territory to place your ${troop}.`;
 							alert('Please enter a valid number.');
 							pickZone(zoneCallback);
 							return;
 						}
 						MAP.highlight(z => true, false);
 						HUD.hideAddButtons();
-						zone.infantry += num;
-						player.gold -= num * COST_INFANTRY;
-						HUD.label = 'Added ' + num + ' infantry to ' + zone.name + '.';
+						zone[troop] += num;
+						player.gold -= num * COST_TROOP[troop];
+						HUD.label = `Added ${num} ${troop} to ${zone.name}.`;
 						pressButton(btnCall);
 					}
 					else pickZone(zoneCallback);
