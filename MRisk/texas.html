@@ -14,40 +14,11 @@
 	// These are some utility functions to make life easier
 	// The game doesn't depend upon them
 
-	// $() -> 							document
-	// $(".abc") -> 					HTMLCollection with all elements that have class 'abc'
-	// $(".abc", n) -> 					nth node in HTMLCollection with all 
-	//									elements that have class 'abc'
-	// $("#fgh") -> 					element with id "fgh"
-	// $("#fgh", 'li some string') -> 	insert 'li' node with innerHTML = 'some string' 
-	//									into element whose id is 'fgh'
-
-	$ = (name, idx) => {
-		if(!name || name === '') return document;
-		else if(name.startsWith('.')) {
-			let docs = document.getElementsByClassName(name.substring(1));
-			if(isNaN(idx)) return docs;
-			else return docs[idx];
-		}
-		else if(name.startsWith('#')) {
-			if(!idx)
-				return document.getElementById(name.substring(1));
-			else {
-				let idxFirstSpace = idx.indexOf(" ");
-				let tag = idx.substring(0, idxFirstSpace);
-				let args = idx.substring(idxFirstSpace + 1);
-				let elem = document.createElement(tag);
-				elem.innerHTML = args;
-				elem.animate([ {opacity: 0}, {opacity: 100} ], {duration: 250});
-				document.getElementById(name.substring(1)).appendChild(elem);
-			}
-		}
-	}
 	clog = console.log;
 
     // Usefule Type Checking Function
 
-	// assert(!!door, true); 
+	// assert(door, NotEmpty); or assert(NotEmpty, door);
 	//		Fails for null, '', undefined
 	//		Success for any non empty object
 	// assert(door instanceof Door, true);
@@ -260,7 +231,7 @@
 </script>
 
 <script type="text/javascript">
-	canvas = $("#canvas");
+	canvas = document.getElementById("canvas");
 	canvas.width = Math.floor(window.innerWidth);
 	canvas.height = Math.floor(window.innerHeight * 0.999);
 	ctx = canvas.getContext('2d');
