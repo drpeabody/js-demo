@@ -87,10 +87,8 @@
 		}
 		drawNames(ctx, w, h, fs) { 
 			ctx.fillText(this.name, this.x, this.y + h/2); 
-		}
-		drawArmies(ctx, w, h, fs) {
 			ctx.fillText(`${this.Infantry} - ${this.Cavalry} - ${this.Artillery}`, this.x, this.y + h/2 + fs); 	
-		}
+		}	
 	}
 
 	class GameMap {
@@ -121,16 +119,21 @@
 
 		draw(ctx, width, height){
 			this.zones.forEach(s => { s.draw(ctx, w, h); });
-			ctx.font = fontSize + "px Georgia";
 			ctx.fillStyle = "#fff";
 			this.zones.forEach(s => { s.drawNames(ctx, w, h, fontSize); });
-			this.zones.forEach(s => { s.drawArmies(ctx, w, h, fontSize); });
 		}
 
 		randomlyAlotPlayers() {
-			let rem = ZONES.filter(s => s.master === null);
-			let len = PLAYERS.length;
-			rem.forEach(s => { s.master = PLAYERS[Math.floor(len * Math.random())]; });
+			let rem = ZONES
+				.filter(s => s.master === null)
+				.sort(s => 0.5 < Math.random()); // Filter and shulffle
+			let idx = 0;
+			for(let z of rem) {
+				z.master = PLAYERS[idx++];
+				if(idx === PLAYERS.length) idx = 0;
+			}
+
+			ZONES.forEach(z => { z.master.numZonesOwned++; } );
 		}
 
 		highlight(pred, state) {
@@ -149,6 +152,7 @@
 			if(numPlayers === 2)
 				this.capital2 = null;
 			this.gold = 24;
+			this.numZonesOwned = 0;
 		}
 
 		choseCapital(callback) {
@@ -193,8 +197,7 @@
 				ctx.fillText("Capital: " + this.capital.name, width * 0.825, height * 0.15);
 			if(this.capital2)
 				ctx.fillText("Capital 2: " + this.capital2.name, width * 0.825, height * 0.2);
-			ctx.fillText("# of Zones Owned: " + ZONES.filter(s => s.master === this).length,
-				width * 0.825, height * 0.25);
+			ctx.fillText("# of Zones Owned: " + this.numZonesOwned, width * 0.825, height * 0.25);
 		}
 	}
 
@@ -234,7 +237,7 @@
 	canvas = document.getElementById("canvas");
 	canvas.width = Math.floor(window.innerWidth);
 	canvas.height = Math.floor(window.innerHeight * 0.999);
-	ctx = canvas.getContext('2d');
+	ctx = canvas.getContext('2d', { alpha: false });
 
 	camera = {
 		x: 350, y: 100
@@ -315,6 +318,7 @@
 	let w = Math.floor(width * 0.8 / 10);
 	let h = Math.floor(height / 10);
 	let fontSize = Math.floor(Math.sqrt(w * h)/4.5);
+	ctx.font = fontSize + "px Georgia";
 
 	let ZONES = [
 		new Zone('Paris', 		1*w, 2*h, ['London', 'Brussels', 'Stuttgart', 'Nantes', 'Geneva']),
@@ -361,13 +365,15 @@
 	let MAP = new GameMap(ZONES);
 	let PLAYERS = [ new Player("#f00", 2), new Player("#0f0", 2) ];
 	let HUD = {
+		x: 0, y: height*0.8, w: width*0.8, h: height*0.2,
+		labelX: width * 0.05, labelY: height*0.975,
 		buttons: [ new Button('Add', width * 0.05, height * 0.825, width*0.05, height*0.1)],
 		label: '',
 		draw: (ctx) => {
 			ctx.fillStyle = "#ff04";
-			ctx.fillRect(0, height*0.8, width* 0.8, height*0.2);
+			ctx.fillRect(HUD.x, HUD.y, HUD.w, HUD.h);
 			HUD.buttons.forEach(s => s.draw(ctx));
-			ctx.fillText(HUD.label, width * 0.05, height*0.975);
+			ctx.fillText(HUD.label, HUD.labelX, HUD.labelY);
 		},
 
 		getButtonAt: (x, y) => {
@@ -385,9 +391,7 @@
 		},
 		hideAddButtons: () => {
 			HUD.buttons = HUD.buttons.filter(s => 
-				s.name !== "Infantry" && 
-				s.name !== "Cavalry" && 
-				s.name !== "Artillery"
+				s.name !== "Infantry" && s.name !== "Cavalry" && s.name !== "Artillery"
 			);
 		}
 	}
@@ -444,8 +448,8 @@
 				MAP.highlight(s => s.master === player, true);
 				zoneCallback = (zone) => {
 					if(zone && zone.master === player) {
-						HUD.label = 'You have chosen ' + zone.name + '.';
-						let num = parseInt(prompt("Enter the number of " + troop + " to add to " + zone.name));
+						HUD.label = `You have chosen ${zone.name}.`;
+						let num = parseInt(prompt(`Enter the number of ${troop} to add to ${zone.name}`));
 						if(isNaN(num) || player.gold - num * COST_TROOP[troop] < 0){
 							HUD.label = `Choose a territory to place your ${troop}.`;
 							alert('Please enter a valid number.');

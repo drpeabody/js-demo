@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title> Mahabharat - Dhwandh </title>
+</head>
+<style type="text/css" desc="Card Styling">
+	.card {
+		color: #000;
+		background-size: contain;
+		height: 40vh;
+		width: 30vh;
+		text-align: center;
+	}
+	.card h1 {
+		padding-top: 60%;
+		font-size: 100%;
+		margin-bottom: 0;
+	}
+	.card p {
+		margin-left: 7%;
+		margin-right: 7%;
+		font-size: 60%;
+		margin-top: 2%;
+	}
+	.regular { background-image: url('back-regular.jpg'); }
+	.rare { background-image: url('back-rare.jpg'); }
+	.elite { background-image: url('back-elite.jpg'); }
+</style>
+
+<script type="text/javascript">
+	
+	let request = (url, callback, method) => {
+		const h = new XMLHttpRequest();
+		if(!method) method = 'GET';
+		h.open(method, url);
+		
+		h.onreadystatechange = () => {
+			if(h.readyState === 4) {
+				if(!callback) console.log(h.responseText); 
+				else callback(h.responseText);
+			}
+		}
+
+		h.send();
+		return `HTTP ${method} ${url}`;
+	}
+
+	window.onbeforeunload = (event) => {
+		return confirm("Confirm refresh");
+	};
+
+
+
+</script>
+
+
+<div style="display: none;" desc="Card Definition">
+	<div class="card regular"> <h1> Arjuna </h1> <p> The son of the King Of Devas Indra, Arjuna was personally trained by Acharya Dron and was the most gifted student of his lifetime. </p> </div>
+	<div class="card regular"> <h1> Bhim </h1> <p> A mountain of physical strength, Bhim is said to be unscathed by metal arrows, he is said to be gifted with the strength of a 100 elephants. </p> </div>
+	<div class="card regular"> <h1> Yudhisthira </h1> <p> The wisest man alive of his time, Yudhisthira never lies. He was the King of Hastinapur for a very long time and later converted a land of snake charmers into the most developed ares of his time. </p> </div> 
+	<div class="card regular"> <h1> Karna  </h1> <p> The Son of Surya Dev, Karna packs the living strength of the sun. Better than any other Marksman, his talent, eventhough unaided by formal education, is rivalled only by Arjuna. </p> </div>
+	<div class="card regular"> <h1> Bhishma </h1> <p> The Immortal Army General of Hastinapur, Bhishma is revered by one and all who call him "The Father of Fathers".  </p> </div>
+	<div class="card elite"> <h1> Krishna </h1> <p> Nothing that can be said by words will justify the charm cunning and composition of Lord Krishna, the living manifestation of Grace itself. </p> </div>
+	<div class="card regular"> <h1> Duryodhan </h1> <p> The heir of Hastinapur, the first born of Dushasana, the most powerful of all the Kauravas, his power and strength is only scarred by his unethical and unbecoming lust for revenge. </p> </div>
+	<div class="card regular"> <h1> Dron </h1> <p> Aacharya Dron, the true master of the bow, the wielder or Asi, the invincible sword of Lord Brahma hismelf, he has the knowledge of all the weapons that can be conceived. </p> </div>
+	<div class="card regular"> <h1> Dron Putra </h1> <p> Ashwatthama, the son of Dron, trained formally by Dron himself, he has travelled far and wide in search of knowledge. He wield the Brahmastra, the weapon that was designed to detroy entire planets. </p> </div>
+	<div class="card regular"> <h1> Abhimamyu </h1> <p> The Son of Arjuna, blessed by the Moon God Chandra, Abhimanyu was as skilledat warfare as anyother of his generation, successfully fending off great attacks from Bhisma PitaMaha in the Battle of Kurukshetra. </p> </div>
+	<div class="card regular"> <h1> Bhim Putra </h1> <p> The son of Bhim tha Pandava, a giant that can trample animals and humans alike, Ghatothkachha is mmune to most attacks by sheer mass.  </p> </div> 
+	<div class="card regular"> <h1> Balram </h1> <p> The Immortal Krishna's elder brother, wiser more powerful in combat, Balram is just and fair so remained neutral in the Battle of Kurukshetra. </p> </div>
+	<div class="card rare"> <h1> Surya </h1> <p> Surya, the Sun God, is revered by all as the powerhouse of the world, the dispeller of knowledge, the bringer of freedom. </p> </div>
+	<div class="card rare"> <h1> Mercury </h1> <p> Budhh, the son of Chandra, master of the third day of the week, Budhh holds a special place in determining luck. </p> </div>
+	<div class="card rare"> <h1> Venus </h1> <p> Shukra, one of the Navgraha or the Nine Planets, Shukra is the wise guide under whom the Asuras plan their devious plans. </p> </div>
+	<div class="card rare"> <h1> Mars </h1> <p> Mangal, the red panet, also known as Lohit, was born from Bhumi and the blood drops of Lord Shiva. He is the God of War and violent bloodshed wets his skin </p> </div>
+	<div class="card rare"> <h1> Brahaspati </h1> <p> The great sage of Jupiter, he was orn from the first great light and carries the cosmic order. He is the wisest of the Navgraha, he is considered by a Guru by all. </p> </div>
+	<div class="card rare"> <h1> Shani </h1> <p> Shani, Saturn is the God of Justice that none can escape from. Discipline, hard work and penance characerise him, he is the record keeper of Karma. </p> </div>
+	<div class="card rare"> <h1> Chandra </h1> <p> Chandra, or the Indu, is the God of the Moon. He is the God of the Night, reigning in a time where no other Gods are there to help. </p> </div>
+	<div class="card elite"> <h1> Shiv </h1> <p> The Mahadev, the ultimate, the Destroyer of worlds, Lord Shiva is simple, yet he is feared by all, for when he bears rage, all the worlds burn to dust under his power.  </p> </div>
+</div>
+
+<body>
+
+</body>
+</html>
