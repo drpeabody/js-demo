@@ -10,6 +10,15 @@ const generateNewId = () => {
 	return totalConnections;
 }
 
+/**
+ * Find the index of the given client id in the global clients array
+ * 
+ * @param {string} id	If the id is M-xyz then just send in "xyz"
+ * 
+ * @return {idx}	if given client is found
+ * @return {-1} 	if given client is not found
+ * 
+ */
 const getIndexOfId = (id) => {
 	// Input: xxx NOT M-xxx
 	// Replace with binary search later
@@ -26,10 +35,21 @@ class Player {
 	}
 }
 
-// true means card1 beats card 2
+/**
+ * Resolves war between two cards which are sent as arguments.
+ * 
+ * @param {string} card1	The exact name of the card
+ * @param {string} card2    The exact name of the card
+ * 
+ * @return {true}	if card1 beats card2
+ * @return {false} 	if card2 beats card1
+ * @return {draw} 	if no card can win
+ * @return {error} 	if one of the cards is not found in the deck
+ * 
+ */
 const resolveWar = (card1, card2) => {
 	let idx1 = CARDS.findIndex(s => s.name === card1), idx2 = CARDS.findIndex(s => s.name === card2);
-	if(idx1 < 0 && idx2 < 0) return 'draw';
+	if(idx1 < 0 || idx2 < 0) return 'draw';
 	else if(idx1 < 0) return false;
 	else if(idx2 < 0) return true;
 	if(GRAPH[idx1][idx2 - idx1] !== undefined) return GRAPH[idx1][idx2 - idx1];

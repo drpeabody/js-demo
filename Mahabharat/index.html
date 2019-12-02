@@ -4,6 +4,7 @@
 	<meta charset="utf-8">
 	<title> Mahabharat - Dhwandh </title>
 </head>
+
 <style type="text/css" desc="Card Styling">
 	.card {
 		color: #000;
@@ -25,7 +26,15 @@
 	}
 	.regular { background-image: url('back-regular.jpg'); }
 	.rare { background-image: url('back-rare.jpg'); }
-	.elite { background-image: url('back-elite.jpg'); }
+	.elite { background-image: url('back-elite.jpg'); }</style>
+
+<style type="text/css">
+	body {
+		text-align: center;
+	}
+	.panel {
+		display: none;
+	}
 </style>
 
 <script type="text/javascript">
@@ -33,26 +42,18 @@
 	let request = (url, callback, method) => {
 		const h = new XMLHttpRequest();
 		if(!method) method = 'GET';
+		if(!callback) callback = console.log;
 		h.open(method, url);
 		
 		h.onreadystatechange = () => {
 			if(h.readyState === 4) {
-				if(!callback) console.log(h.responseText); 
-				else callback(h.responseText);
+				callback(h.responseText);
 			}
 		}
 
 		h.send();
 		return `HTTP ${method} ${url}`;
-	}
-
-	window.onbeforeunload = (event) => {
-		return confirm("Confirm refresh");
-	};
-
-
-
-</script>
+	}</script>
 
 
 <div style="display: none;" desc="Card Definition">
@@ -80,5 +81,39 @@
 
 <body>
 
+	<div>
+		<h1> Welcome to Mahabharat the Game</h1>
+	</div>
+
+	<div id="login-panel" class="panel">
+		<h2> Press the login button to continue.</h2> <hr>
+		Host <input type="text" name="host" id="host"> <br>
+		<button type="button" id='loginBtn'> Login </button> <hr>
+	</div>
+
+	<div id='dashboard-panel' class="panel">
+		<h2> Your in game Id is <b id='id-space'> </b> </h2>
+		<h3> To start a new game, enter the id of your friend below, and press start game. </h3> 
+		<textarea rows="1"> </textarea>
+		<button id='game-button'> Play </button>
+	</div>
+
+<script type="text/javascript">
+
+	const ID = (t) => { return document.getElementById(t); };
+
+	ID('login-panel').style.display = 'block';
+
+	let M = {};
+
+	ID('loginBtn').onclick = e => {
+		let v = request('/login', (e) => {
+			M.id = e;
+			ID('id-space').innerHTML = e;
+			ID('dashboard-panel').style.display = 'block';
+			ID('login-panel').style.display = 'none';
+		});
+	};
+</script>
 </body>
 </html>
