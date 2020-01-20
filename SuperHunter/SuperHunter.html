@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"> 
+	<title>MRisk - A Modified Risk Game</title>
+</head>
+<body style="margin: 0; text-align: center;" oncontextmenu="return false">
+
+	<canvas id="canvas"></canvas>
+
+</body>
+
+<script type="text/javascript"> 
+	// These are some utility functions to make life easier
+	// The game doesn't depend upon them
+
+	clog = console.log;
+
+    // Usefule Type Checking Function
+
+	// assert(door, NotEmpty); or assert(NotEmpty, door);
+	//		Fails for null, '', undefined
+	//		Success for any non empty object
+	// assert(door instanceof Door, true);
+	//		Checks for objects that were made using new keyword
+	// assert(typeof name, 'string')
+	//		Checks of type of built in objects
+	// assert(typeof foo, 'function')
+	// 		Also works
+
+    assert = function(obj1, obj2, msg) {
+    	if(obj1 === NotEmpty && !obj2)
+    		throw Error(msg);
+    	if(obj2 === NotEmpty && !obj1)
+    		throw Error(msg);
+    	if(obj1 !== obj2 && obj1 !== NotEmpty && obj2 != NotEmpty) 
+    		throw Error(msg);
+    }
+
+    // A special long unique string to ensure non empty objects using assrt()
+    const NotEmpty = 'ODH@<)UD@D(@#>DJIJEIDKLADJ<@UD(UD>KLDM:LEDJ';
+
+    // Define constant object members
+
+    final = (obj, key, value) => {
+    	assert(obj, NotEmpty, 'Object cannot be empty');
+    	assert(key, NotEmpty, 'Key cannot be empty');
+		Object.defineProperty( obj, key, {
+			value: value,
+			writable: false,
+			enumerable: true,
+			configurable: true
+		}); // Makes obj.<key> unwritable and final
+    }
+
+</script>
+
+<script type="text/javascript"></script>
+
+<script type="text/javascript">
+	// Define Map, Player, Enemies, Arrows, powerups
+	// Player will have following variables: 
+	//     Movement Speed
+	//     Fire Rate
+	//     Bullet Speed
+	//     Damage (number of shots to kill enemies)
+
+	class Box {
+		constructor(x, y, height, width){
+			assert(typeof x === 'number' && !isNaN(x), true, 'X should be a valid number');
+			assert(typeof y === 'number' && !isNaN(y), true, 'Y should be a valid number');
+			assert(typeof height === 'number' && !isNaN(height), true, 'Height should be a valid number');
+			assert(typeof width === 'number' && !isNaN(width), true, 'Width should be a valid number');
+			this.x = x;
+			this.y = y;
+			this.height = height;
+			this.width = width;
+		}
+	}
+
+	class MapObject {
+		constructor(box){
+			assert(box.constructor.name, 'Box', 'Should be a valid Box Object');
+			final(this, 'box', box);
+		}
+
+		draw(ctx){
+			ctx.fillRect(box.x, box.y, box.width, box.height);
+		}
+	}
+
+	class Map {
+		constructor(camera, entities, W, H){
+			assert(camera, NotEmpty, 'Cant be a null camera');
+			assert(typeof camera, NotEmpty, 'Cant be a null camera');
+			assert(entities.constructor.name, 'Array', 'Entities should be array');
+			assert(typeof W === 'number' && !isNaN(W), true, 'W should be a valid number');
+			assert(typeof H === 'number' && !isNaN(Y), true, 'H should be a valid number');
+			final(this, 'camera', camera);
+			final(this, 'entities', entities);
+		}
+
+		draw(ctx) {
+			let style = "#fff";
+			ctx.fillRect(0, 0, W, H);
+			this.entities.forEach(s => {
+				if(s.box.x < this.camera.x + this.camera.width && 
+					s.box.y < this.camera.y + this.camera.height &&
+					s.box.x + s.box.width > this.camera.x &&
+					s.box.y + s.box.height > this.camera.y){
+					s.draw(ctx);
+				}
+			});
+		}
+	}
+
+	class Player{
+		constructor(x, y){
+			// this.box = new Box(x, y, )
+
+		}
+	}
+
+</script>
+
+
+</html>

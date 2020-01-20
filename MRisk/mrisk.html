@@ -198,6 +198,9 @@
 			if(this.capital2)
 				ctx.fillText("Capital 2: " + this.capital2.name, width * 0.825, height * 0.2);
 			ctx.fillText("# of Zones Owned: " + this.numZonesOwned, width * 0.825, height * 0.25);
+			ctx.fillText("Cost of Infantry: 1", width * 0.825, height * 0.3);
+			ctx.fillText("Cost of Cavalry: 3", width * 0.825, height * 0.35);
+			ctx.fillText("Cost of Artillery: 5", width * 0.825, height * 0.4);
 		}
 	}
 
@@ -220,7 +223,7 @@
 			ctx.fillRect(this.x, this.y, this.w, this.h);
 			ctx.fillStyle = "#000";
 			let g = ctx.measureText(this.name);
-			ctx.fillText(this.name, this.x + this.w/2 - g.width/2, this.y + this.h/2);
+			ctx.fillText(this.name, this.x + this.w/2 - g.width/2, this.y + this.h/1.5);
 		}
 
 		contains(x, y){
@@ -365,9 +368,12 @@
 	let MAP = new GameMap(ZONES);
 	let PLAYERS = [ new Player("#f00", 2), new Player("#0f0", 2) ];
 	let HUD = {
-		x: 0, y: height*0.8, w: width*0.8, h: height*0.2,
+		x: 0, y: height*0.85, w: width*0.8, h: height*0.15,
 		labelX: width * 0.05, labelY: height*0.975,
-		buttons: [ new Button('Add', width * 0.05, height * 0.825, width*0.05, height*0.1)],
+		buttons: [ 
+			new Button('Add', width * 0.05, height * 0.87, width*0.05, height*0.065),
+			new Button('Attack', width * 0.125, height * 0.87, width*0.05, height*0.065),
+		],
 		label: '',
 		draw: (ctx) => {
 			ctx.fillStyle = "#ff04";
@@ -415,7 +421,7 @@
 				HUD.label = 'Green Player must choose their Capital.';
 				changePlayer();
 				curPlayer().choseCapital(() => {
-					HUD.label = 'All other zones have been randomly distributed. It is Red player\'s turn.';
+					HUD.label = 'All other zones have been randomly distributed. It is Green player\'s turn.';
 					MAP.randomlyAlotPlayers();
 					setTimeout(playGame, 1);
 				});
@@ -449,7 +455,13 @@
 				zoneCallback = (zone) => {
 					if(zone && zone.master === player) {
 						HUD.label = `You have chosen ${zone.name}.`;
-						let num = parseInt(prompt(`Enter the number of ${troop} to add to ${zone.name}`));
+						let val = prompt(`Enter the number of ${troop} to add to ${zone.name}`);
+						if(val === null){
+							HUD.hideAddButtons();
+							pressButton(btnCall);
+							return;
+						}
+						let num = parseInt(val);
 						if(isNaN(num) || player.gold - num * COST_TROOP[troop] < 0){
 							HUD.label = `Choose a territory to place your ${troop}.`;
 							alert('Please enter a valid number.');
@@ -466,7 +478,6 @@
 					else pickZone(zoneCallback);
 				}
 				pickZone(zoneCallback);
-
 			});
 		};
 
