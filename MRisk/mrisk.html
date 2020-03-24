@@ -22,6 +22,7 @@
 <script type="text/javascript" src="gamemap.js"> </script>
 <script type="text/javascript" src="player.js"> </script>
 <script type="text/javascript" src="button.js"> </script>
+<script type="text/javascript" src="attack.js"> </script>
 
 
 <script type="text/javascript">
@@ -165,6 +166,7 @@
 			HUD.buttons = HUD.buttons.concat([ 
 				new Button('Add', width * 0.05, height * 0.87, width*0.05, height*0.065),
 				new Button('Attack', width * 0.125, height * 0.87, width*0.05, height*0.065),
+				new Button('Pass', width * 0.2, height * 0.87, width*0.05, height*0.065),
 			]);
 		},
 
@@ -202,7 +204,12 @@
 	let currentPlayerIndex = 0;
 
 	curPlayer = () => { return PLAYERS[currentPlayerIndex]; }
-	changePlayer = () => { currentPlayerIndex = (currentPlayerIndex) ? 0 : 1; }
+	changePlayer = () => { 
+		currentPlayerIndex++;
+		if(currentPlayerIndex == PLAYERS.length){
+			currentPlayerIndex = 0;
+		}
+	}
 
 	HUD.label = 'Red Player must choose their Capital.';
 	curPlayer().choseCapital(() => {
@@ -232,50 +239,76 @@
 		let player = curPlayer();
 
 		let btnCall = (btn) => {
-			if(!btn || btn.name !== 'Add') {
+			if(!btn) {
 				pressButton(btnCall);
 				return;
 			}
-			HUD.showAddButtons();
-			HUD.label = 'Choose Infantry, Cavalry, or Artillery. Click anywhere else to cancel.';
-			pressButton((b) => {
-				if(!b || (b.name !== 'Infantry' && b.name !== 'Cavalry' && b.name !== 'Artillery')) {
-					HUD.hideAddButtons();
-					pressButton(btnCall);
-					return;
-				}
-				let troop = b.name;
-				HUD.label = `Choose a territory to place your ${troop}.`;
-				MAP.highlight(s => s.master === player, true);
-				zoneCallback = (zone) => {
-					if(zone && zone.master === player) {
-						HUD.label = `You have chosen ${zone.name}.`;
-						let val = prompt(`Enter the number of ${troop} to add to ${zone.name}`);
-						if(val === null){
-							HUD.hideAddButtons();
-							MAP.highlight(s => true, false);
-							HUD.label = 'You have selected to cancel adding.';
-							pressButton(btnCall);
-							return;
-						}
-						let num = parseInt(val);
-						if(isNaN(num) || player.gold - num * COST_TROOP[troop] < 0){
-							HUD.label = `Choose a territory to place your ${troop}.`;
-							alert('Please enter a valid number.');
-							pickZone(zoneCallback);
-							return;
-						}
-						MAP.highlight(z => true, false);
+			if (btn.name === 'Add') {
+				HUD.showAddButtons();
+				HUD.label = 'Choose Infantry, Cavalry, or Artillery. Click anywhere else to cancel.';
+				pressButton((b) => {
+					if(!b || (b.name !== 'Infantry' && b.name !== 'Cavalry' && b.name !== 'Artillery')) {
 						HUD.hideAddButtons();
-						zone[troop] += num;
-						player.gold -= num * COST_TROOP[troop];
-						HUD.label = `Added ${num} ${troop} to ${zone.name}.`;
 						pressButton(btnCall);
+						return;
+					}
+					let troop = b.name;
+					HUD.label = `Choose a territory to place your ${troop}.`;
+					MAP.highlight(s => s.master === curPlayer(), true);
+					let zoneCallback = (zone) => {
+						if(zone && zone.master === curPlayer()) {
+							HUD.label = `You have chosen ${zone.name}.`;
+							let val = prompt(`Enter the number of ${troop} to add to ${zone.name}`);
+							if(val === null){
+								HUD.hideAddButtons();
+								MAP.highlight(s => true, false);
+								HUD.label = 'You have selected to cancel adding.';
+								pressButton(btnCall);
+								return;
+							}
+							let num = parseInt(val);
+							if(isNaN(num) || curPlayer().gold - num * COST_TROOP[troop] < 0){
+								HUD.label = `Choose a territory to place your ${troop}.`;
+								alert('Please enter a valid number.');
+								pickZone(zoneCallback);
+								return;
+							}
+							MAP.highlight(z => true, false);
+							HUD.hideAddButtons();
+							zone[troop] += num;
+							curPlayer().gold -= num * COST_TROOP[troop];
+							HUD.label = `Added ${num} ${troop} to ${zone.name}.`;
+							pressButton(btnCall);
+						}
+						else pickZone(zoneCallback);
+					}
+					pickZone(zoneCallback);
+				});
+			}
+			else if (btn.name === 'Attack') {
+				HUD.label = 'Choose one of your territories to start attack.';
+				let zoneCallback = (zone) => {
+					if(zone && zone.master === curPlayer()) {
+						MAP.highlight(s => s.name === zone.name, true);
+						HUD.label = `You have chosen ${zone.name}, choose a neighbour to attack.`;
+						victimCallback = (victim) => {
+							if(!victim || victim.master == curPlayer() || !zone.isNeighbour(victim.name)) {
+								pickZone(victimCallback);
+								return;
+							}
+							MAP.highlight(s => s.name === victim.name, true);
+							HUD.label = resolveAttack(zone, victim);
+							changePlayer();
+						}
+						pickZone(victimCallback);
 					}
 					else pickZone(zoneCallback);
 				}
 				pickZone(zoneCallback);
-			});
+			} else if (btn.name === 'Pass') {
+				changePlayer();
+				pressButton(btnCall);
+			}
 		};
 
 		pressButton(btnCall);
