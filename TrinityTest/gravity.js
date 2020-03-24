@@ -45,41 +45,59 @@
 
 class Orbit {
 	constructor(r, phi, v_rad, v_ang){
-		clog(r, phi, v_rad, v_ang);
 		assert(r > 0, true, "Need Positive Radius");
 		assert(v_rad >= 0, true, "Need Positive Radial Velocity");
 		assert(v_ang != 0, true, "Need Non Zero Angular Velocity");
-		final(this, 'e', (v_rad / v_ang)); // Ecentricity
 		final(this, 'l', r * v_ang); // Angular Momentum per Unit Mass
 		final(this, 'phi', phi);
-		clog(`Orbit: (P, A) = (${this.l * this.l / (1 + this.e)},${this.l * this.l / (1 - this.e)})`);
+		let e;
+		if(Math.abs(Math.sin(phi)) > 0.01)
+			e = v_rad * this.l * this.l / (r * v_ang * Math.sin(phi));
+		else 
+			e = (this.l * this.l / r - 1) / Math.cos(phi);
+		final(this, 'e', Math.abs(e)); // Ecentricity
+		clog(`Orbit: (l, e) = (${this.l},${this.e})`);
+	}
+
+	getPos(theta) {
+		return this.l * this.l / (1 + this.e * Math.cos(theta));
 	}
 }
 
 class Orbiter {
-	constructor (x, y, v_x, v_y, mass) {
-		assert(isNaN(x), false, "Need a Number Coordinate X");
-		assert(isNaN(y), false, "Need a Number Coordinate Y");
-		assert(isNaN(v_x), false, "Need a Number Valocity v_X");
-		assert(isNaN(v_y), false, "Need a Number Valocity v_Y");
-		let r = Math.sqrt(x*x + y*y);
-		let orbit = new Orbit(r, Math.atan(y/x), 
-			(x * v_x + y * v_y) / r, (x * v_y - y * v_x ) / (r * r));
+	constructor (r, phi, v_rad, v_ang, mass) {
+		assert(r > 0, true, "Need Positive Radius");
+		assert(v_rad >= 0, true, "Need Positive Radial Velocity");
+		assert(v_ang != 0, true, "Need Non Zero Angular Velocity");
+		assert(isNaN(mass) && mass > 0, false, "Need a positive number mass");
+		let orbit = new Orbit(r, phi, v_rad, v_ang);
 		final(this, 'orbit', orbit);
+		final(this, 'mass', mass);
+		// this.r = r; R must be calculated from orbit equation
+		this.phi = phi; // Variables
 	}
 
 	draw (ctx, x, y) {
 		if(!this.orbit) return;
-		ctx.strokeStyle = "#fff";
 		ctx.translate(x, y);
+		ctx.fillStyle = "#00f";
+		ctx.fillRect(-5, -5, 10, 10);
+
+		ctx.fillStyle = "#f00";
+		let x0, y0, r0 = this.orbit.getPos(this.phi);
+		x0 = r0 * Math.cos(this.phi);
+		y0 = r0 * Math.sin(this.phi);
+		ctx.fillRect(x0-5, y0-5, 10, 10);
+
+		ctx.strokeStyle = "#fff";
 		ctx.beginPath();
 		let o = this.orbit;
 		for(let i = 0; i <= 2*PI; i += (2*PI/100)){
-			let r = o.l * o.l / (1 + o.e * Math.cos(i - o.phi));
-			ctx.lineTo(r * Math.sin(i), r * Math.cos(i));
+			let r = o.getPos(i);
+			ctx.lineTo(r * Math.cos(i), r * Math.sin(i));
 		}
-		ctx.closePath();
 		ctx.stroke();
+		ctx.closePath();
 		ctx.translate(-x, -y);
 	}
 }
@@ -105,14 +123,20 @@ const width = canvas.width;
 const height = canvas.height;
 
 // Test
-let o = new Orbiter(100, 100, 0, 10);
+let R0 = 100, Phi0 = PI/2;
+let o = new Orbiter(R0, Phi0, 0, 0.2, 1);
 
 draw = () => {
 	ctx.fillStyle = "#000";
 	ctx.fillRect(0, 0, width, height);
 
-	// orbit.draw(ctx, width/2, height/2);
 	o.draw(ctx, width/2, height/2);
+
+	ctx.fillStyle = "#0ff";
+	let x0, y0;
+	x0 = width/2 + R0 * Math.cos(Phi0);
+	y0 = height/2 + R0 * Math.sin(Phi0);
+	ctx.fillRect(x0-3, y0-3, 6, 6);
 
 	requestAnimationFrame(draw);
 }

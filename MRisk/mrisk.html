@@ -4,242 +4,30 @@
 	<meta charset="utf-8"> 
 	<title>MRisk - A Modified Risk Game</title>
 </head>
-<body style="margin: 0; text-align: center;" oncontextmenu="return false">
+<style type="text/css">
+	body {
+		margin: 0;
+		text-align: center;
+		overflow: hidden;
+	}
+</style>
+<body oncontextmenu="return false">
 
 	<canvas id="canvas"></canvas>
 
 </body>
 
-<script type="text/javascript"> 
-	// These are some utility functions to make life easier
-	// The game doesn't depend upon them
+<script type="text/javascript" src="util.js"></script>
+<script type="text/javascript" src="zone.js"> </script>
+<script type="text/javascript" src="gamemap.js"> </script>
+<script type="text/javascript" src="player.js"> </script>
+<script type="text/javascript" src="button.js"> </script>
 
-	clog = console.log;
-
-    // Usefule Type Checking Function
-
-	// assert(door, NotEmpty); or assert(NotEmpty, door);
-	//		Fails for null, '', undefined
-	//		Success for any non empty object
-	// assert(door instanceof Door, true);
-	//		Checks for objects that were made using new keyword
-	// assert(typeof name, 'string')
-	//		Checks of type of built in objects
-	// assert(typeof foo, 'function')
-	// 		Also works
-
-    assert = function(obj1, obj2, msg) {
-    	if(obj1 === NotEmpty && !obj2)
-    		throw Error(msg);
-    	if(obj2 === NotEmpty && !obj1)
-    		throw Error(msg);
-    	if(obj1 !== obj2 && obj1 !== NotEmpty && obj2 != NotEmpty) 
-    		throw Error(msg);
-    }
-
-    // A special long unique string to ensure non empty objects using assrt()
-    NotEmpty = 'ODH@<)UD@D(@#>DJIJEIDKLADJ<@UD(UD>KLDM:LEDJ';
-
-    // Define constant object members
-
-    final = (obj, key, value) => {
-    	assert(obj, NotEmpty, 'Object cannot be empty');
-    	assert(key, NotEmpty, 'Key cannot be empty');
-		Object.defineProperty( obj, key, {
-			value: value,
-			writable: false,
-			enumerable: true,
-			configurable: true
-		}); // Makes obj.<key> unwritable and final
-    }
-
-</script>
-
-<script type="text/javascript">
-	class Zone {
-		constructor(name, x, y, neighbours){
-			assert(name, NotEmpty, 'Name of Zone cannot be empty');
-			assert(typeof name, 'string', 'Name of Zone should be a String');
-			assert(neighbours.constructor.name, 'Array', 'Neihbous should be array');
-			assert(typeof x === 'number' && !isNaN(x), true, 'X should be a valid number');
-			assert(typeof y === 'number' && !isNaN(y), true, 'Y should be a valid number');
-			neighbours.forEach(s => { assert(typeof s, 'string', 'Neighbours should be names'); })
-			final(this, 'name', name);
-			final(this, 'neighbours', neighbours);
-			final(this, 'x', x);
-			final(this, 'y', y);
-			this.Infantry = 1;
-			this.Cavalry = 0;
-			this.Artillery = 0;
-			this.master = null;
-			this.highlighted = false;
-		}
-
-		isNeighbour(name) { return this.neighbours.find(s => s === name) !== undefined; }
-		draw(ctx, w, h) {
-			let style = "#fff";
-			if(this.master !== null){
-				style = this.master.color;
-			}
-			if(this.highlighted) ctx.fillStyle = style + "6";
-			else ctx.fillStyle = style + "3";
-			ctx.fillRect(this.x, this.y, w, h);
-		}
-		drawNames(ctx, w, h, fs) { 
-			ctx.fillText(this.name, this.x, this.y + h/2); 
-			ctx.fillText(`${this.Infantry} - ${this.Cavalry} - ${this.Artillery}`, this.x, this.y + h/2 + fs); 	
-		}	
-	}
-
-	class GameMap {
-		constructor(zones){
-			assert(zones.constructor.name, 'Array', 'Zones has to be an array of Zones');
-			zones.forEach(s => { assert(s.constructor.name, "Zone", 'Every zone is a zone'); });
-			if(zones.length < 2) throw Error("Lol Map this is");
-			final(this, 'zones', zones);
-
-			// Verify that the adjecency lists are symmetric
-			zones.forEach(s => { 
-				s.neighbours.forEach(t => {
-					let tzone = zones.find(z => z.name === t);
-					assert(tzone.isNeighbour(s.name), true, t + ' should be a neighbour of ' + s.name);
-				});
-			});
-		}
-
-		getZone (name) { return this.zones.find(s => s.name === name); }
-		areNeighbours(name1, name2) { return this.getZone(name1).isNeighbour(name2); }
-		getZoneAt(x, y) {
-			for(let z of this.zones) {
-				if(z.x < x && z.x + w > x){
-					if(z.y < y && z.y + h > y) return z;
-				}
-			}
-		}
-
-		draw(ctx, width, height){
-			this.zones.forEach(s => { s.draw(ctx, w, h); });
-			ctx.fillStyle = "#fff";
-			this.zones.forEach(s => { s.drawNames(ctx, w, h, fontSize); });
-		}
-
-		randomlyAlotPlayers() {
-			let rem = ZONES
-				.filter(s => s.master === null)
-				.sort(s => 0.5 < Math.random()); // Filter and shulffle
-			let idx = 0;
-			for(let z of rem) {
-				z.master = PLAYERS[idx++];
-				if(idx === PLAYERS.length) idx = 0;
-			}
-
-			ZONES.forEach(z => { z.master.numZonesOwned++; } );
-		}
-
-		highlight(pred, state) {
-			this.zones.filter(pred).forEach(z => z.highlighted = state);
-		}
-		
-	}
-
-	class Player {
-		constructor(color, numPlayers){
-			assert(color, NotEmpty, 'Color Cannot be Empty');
-			assert(color.charAt(0), '#', 'Color must be a hex code');
-			final(this, 'color', color);
-			final(this, 'zones', []);
-			this.capital = null;
-			if(numPlayers === 2)
-				this.capital2 = null;
-			this.gold = 24;
-			this.numZonesOwned = 0;
-		}
-
-		choseCapital(callback) {
-			assert(typeof callback, 'function', 'Callback should be function.');
-			if(this.capital && this.capital2) return;
-			let choices = MAP.zones
-				.filter(s => s.master === null)
-				.sort(s => 0.5 < Math.random())
-				.slice(0, 10);
-			choices.forEach(s => { s.highlighted = true; });
-			let self = this;
-			let f = (z => {
-				if(choices.includes(z)){
-					if(!this.capital) this.capital = z;
-					else if(!this.capital2) this.capital2 = z;
-					z.master = self;
-					MAP.highlight(z => true, false);
-					callback();
-				}
-				else pickZone(f);
-			});
-			pickZone(f);
-		}
-
-		draw(ctx) {
-			if(this.capital){
-				ctx.fillStyle = this.color;
-				ctx.fillRect(this.capital.x, this.capital.y, w, h/10);
- 			}
-			if(this.capital2){
-				ctx.fillStyle = this.color;
-				ctx.fillRect(this.capital2.x, this.capital2.y, w, h/10);
- 			}
-		}
-
-		drawHUD(ctx) {
-			ctx.fillStyle = this.color + "4";
-			ctx.fillRect(width * 0.8, 0, 0.2*width, height);
-			ctx.fillStyle = "#fff";
-			ctx.fillText("Gold: " + this.gold, width * 0.825, height * 0.1);
-			if(this.capital)
-				ctx.fillText("Capital: " + this.capital.name, width * 0.825, height * 0.15);
-			if(this.capital2)
-				ctx.fillText("Capital 2: " + this.capital2.name, width * 0.825, height * 0.2);
-			ctx.fillText("# of Zones Owned: " + this.numZonesOwned, width * 0.825, height * 0.25);
-			ctx.fillText("Cost of Infantry: 1", width * 0.825, height * 0.3);
-			ctx.fillText("Cost of Cavalry: 3", width * 0.825, height * 0.35);
-			ctx.fillText("Cost of Artillery: 5", width * 0.825, height * 0.4);
-		}
-	}
-
-	class Button {
-		constructor(name, x, y, w, h) {
-			assert(name, NotEmpty, 'Name of a button cannot be Empty');
-			assert(isNaN(x), false, 'x has to be a number');
-			assert(isNaN(y), false, 'y has to be a number');
-			assert(isNaN(w), false, 'w has to be a number');
-			assert(isNaN(h), false, 'h has to be a number');
-			final(this, 'x', Math.floor(x));
-			final(this, 'y', Math.floor(y));
-			final(this, 'w', Math.floor(w));
-			final(this, 'h', Math.floor(h));
-			final(this, 'name', name);
-		}
-
-		draw(ctx) {
-			ctx.fillStyle = "#ff09";
-			ctx.fillRect(this.x, this.y, this.w, this.h);
-			ctx.fillStyle = "#000";
-			let g = ctx.measureText(this.name);
-			ctx.fillText(this.name, this.x + this.w/2 - g.width/2, this.y + this.h/1.5);
-		}
-
-		contains(x, y){
-			if(this.x < x && this.x + this.w > x){
-				return (this.y < y && this.y + this.h > y);
-			}
-			return false;
-		}
-	}
-
-</script>
 
 <script type="text/javascript">
 	canvas = document.getElementById("canvas");
 	canvas.width = Math.floor(window.innerWidth);
-	canvas.height = Math.floor(window.innerHeight * 0.999);
+	canvas.height = Math.floor(window.innerHeight);
 	ctx = canvas.getContext('2d', { alpha: false });
 
 	camera = {
@@ -299,7 +87,7 @@
 		ctx.fillRect(0, 0, width, height);
 
 		ctx.translate(camera.x, camera.y);
-		MAP.draw(ctx, width, height);
+		MAP.draw(ctx, width, height, fontSize);
 		PLAYERS.forEach(s => s.draw(ctx));
 		ctx.translate(-camera.x, -camera.y);
 
@@ -320,7 +108,7 @@
 	// Draw the map on the first 80% of the screen
 	let w = Math.floor(width * 0.8 / 10);
 	let h = Math.floor(height / 10);
-	let fontSize = Math.floor(Math.sqrt(w * h)/4.5);
+	let fontSize = Math.floor(Math.sqrt(w * h)/5);
 	ctx.font = fontSize + "px Georgia";
 
 	let ZONES = [
@@ -331,7 +119,7 @@
 		new Zone('Plymouth',	-1*w, 2*h, ['Dublin', 'London', 'Nantes']),
 		new Zone('Berlin', 		4*w, 2*h, ['Prague', 'Hamburg', 'Warsaw', 'Frankfurt', 'Munich', 'Hague']),
 		new Zone('Minsk', 		6*w, 2*h, ['Warsaw', 'Moscow', 'Kyiv', 'Riga']),
-		new Zone('Moscow', 		7*w, 2*h, ['Minsk', "Kyiv", 'Riga']),
+		new Zone('Moscow', 		7*w, 2*h, ['Minsk', 'Kyiv', 'Riga']),
 		new Zone('Riga', 		6*w, 1*h, ['Minsk', 'Moscow', 'Helsinki']),
 		new Zone('Helsinki',	6*w, 0*h, ['Riga', 'Stockholm']),
 		new Zone('Stockholm',	5*w, -1*h, ['Helsinki', 'Copenhagen']),
@@ -365,20 +153,26 @@
 		new Zone('Graz', 		3*w, 4*h, ['Stuttgart', 'Munich', 'Vienna', 'Prague', 'Milan', 'Venice']),
 		new Zone('Milan', 		2*w, 4*h, ['Geneva', 'Stuttgart', 'Munich', 'Graz', 'Monaco', 'Venice']),
 	]
-	let MAP = new GameMap(ZONES);
+	let MAP = new GameMap(ZONES, w, h);
 	let PLAYERS = [ new Player("#f00", 2), new Player("#0f0", 2) ];
 	let HUD = {
-		x: 0, y: height*0.85, w: width*0.8, h: height*0.15,
+		x: 0, y: height*0.825, w: width*0.8, h: height*0.175,
 		labelX: width * 0.05, labelY: height*0.975,
-		buttons: [ 
-			new Button('Add', width * 0.05, height * 0.87, width*0.05, height*0.065),
-			new Button('Attack', width * 0.125, height * 0.87, width*0.05, height*0.065),
-		],
+		buttons: [],
 		label: '',
+
+		initButtons: () => {
+			HUD.buttons = HUD.buttons.concat([ 
+				new Button('Add', width * 0.05, height * 0.87, width*0.05, height*0.065),
+				new Button('Attack', width * 0.125, height * 0.87, width*0.05, height*0.065),
+			]);
+		},
+
 		draw: (ctx) => {
 			ctx.fillStyle = "#ff04";
 			ctx.fillRect(HUD.x, HUD.y, HUD.w, HUD.h);
 			HUD.buttons.forEach(s => s.draw(ctx));
+			ctx.fillStyle = "#000";
 			ctx.fillText(HUD.label, HUD.labelX, HUD.labelY);
 		},
 
@@ -390,9 +184,9 @@
 
 		showAddButtons: () => {
 			HUD.buttons = HUD.buttons.concat([
-				new Button("Infantry", width * 0.05, height * 0.65, width*0.075, height*0.1),
-				new Button("Cavalry", width * 0.15, height * 0.65, width*0.075, height*0.1),
-				new Button("Artillery", width * 0.25, height * 0.65, width*0.075, height*0.1),
+				new Button("Infantry", width * 0.55, height * 0.87, width*0.075, height*0.1),
+				new Button("Cavalry", width * 0.65, height * 0.87, width*0.075, height*0.1),
+				new Button("Artillery", width * 0.75, height * 0.87, width*0.075, height*0.1),
 			]);
 		},
 		hideAddButtons: () => {
@@ -422,6 +216,7 @@
 				changePlayer();
 				curPlayer().choseCapital(() => {
 					HUD.label = 'All other zones have been randomly distributed. It is Green player\'s turn.';
+					HUD.initButtons();
 					MAP.randomlyAlotPlayers();
 					setTimeout(playGame, 1);
 				});
@@ -458,6 +253,8 @@
 						let val = prompt(`Enter the number of ${troop} to add to ${zone.name}`);
 						if(val === null){
 							HUD.hideAddButtons();
+							MAP.highlight(s => true, false);
+							HUD.label = 'You have selected to cancel adding.';
 							pressButton(btnCall);
 							return;
 						}
