@@ -15,6 +15,12 @@
 </html>
 <script type="text/javascript" src="three/build/three.js"></script>
 <script type="text/javascript" src="three/examples/js/controls/FlyControls.js"></script>
+<script type="text/javascript" src="three/examples/js/postprocessing/EffectComposer.js"></script>
+<script type="text/javascript" src="three/examples/js/postprocessing/RenderPass.js"></script>
+<script type="text/javascript" src="three/examples/js/postprocessing/BokehPass.js"></script>
+<script type="text/javascript" src="three/examples/js/postprocessing/ShaderPass.js"></script>
+<script type="text/javascript" src="three/examples/js/shaders/BokehShader.js"></script>
+<script type="text/javascript" src="three/examples/js/shaders/CopyShader.js"></script>
 <script>
 	console.log("Reference Video for the looks:");
 	console.log("https://www.youtube.com/watch?v=Y5rfNxFzehA");
@@ -26,6 +32,7 @@
 	var scene = new THREE.Scene();
 	var camera = new THREE.PerspectiveCamera( 75, 
 		window.innerWidth / window.innerHeight, 0.1, 1000 );
+	var post_proc = {};
 
 	var renderer = new THREE.WebGLRenderer();
 	renderer.setSize( window.innerWidth, window.innerHeight );
@@ -39,13 +46,44 @@
 	camera.position.z = 5;
 	fly_controls.update(1);
 	
+	function load_postprocessing() {
+		var renderPass = new THREE.RenderPass( scene, camera );
+
+		var bokehPass = new THREE.BokehPass( scene, camera, {
+			focus: 1.0,
+			aperture: 0.025,
+			maxblur: 1.0,
+			width: window.innerWidth,
+			height: window.innerHeight
+		} );
+
+		var composer = new THREE.EffectComposer( renderer );
+
+		composer.addPass( renderPass );
+		composer.addPass( bokehPass );
+
+		post_proc.composer = composer;
+		post_proc.bokeh = bokehPass;
+		post_proc.controls = {
+			focus: 1.0,
+			aperture: 0.025,
+			maxblur: 1.0
+		};
+		post_proc.update = function () {
+			post_proc.bokeh.uniforms["focus"].value = post_proc.controls.focus;
+			post_proc.bokeh.uniforms["aperture"].value = post_proc.controls.aperture * 1e-5;
+			post_proc.bokeh.uniforms["maxblur"].value = post_proc.controls.maxblur;
+		}
+
+	}
+
 	function load() {
 		fly_controls.movementSpeed = 1;
 		fly_controls.domElement = renderer.domElement;
 		fly_controls.rollSpeed = 0.0;
 		fly_controls.dragToLook = true;
 		fly_controls.autoForward = false;
-		
+
 		for(let i = 0; i < numBodies; i++) {
 			let gg = new THREE.Mesh( geometry, material );
 			gg.position.x = (worldEnd - worldStart) * (Math.random() - 0.5);
@@ -57,7 +95,7 @@
 
 	function animate() {
 		requestAnimationFrame( animate );
-		renderer.render( scene, camera );
+		post_proc.composer.render( 0.1 );
 		
 		if(camera.position.x < worldStart) camera.position.x = worldStart;
 		if(camera.position.y < worldStart) camera.position.y = worldStart;
@@ -70,6 +108,7 @@
 	}
 
 	load();
+	load_postprocessing();
 	animate();
 
 </script>
