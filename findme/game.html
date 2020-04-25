@@ -16,6 +16,12 @@
 <script type="text/javascript" src="three/build/three.js"></script>
 <script type="text/javascript" src="three/examples/js/controls/FlyControls.js"></script>
 <script>
+	console.log("Reference Video for the looks:");
+	console.log("https://www.youtube.com/watch?v=Y5rfNxFzehA");
+
+	var worldStart = -1e2;
+	var worldEnd =   1e2;
+	var numBodies = 1e3;
 
 	var scene = new THREE.Scene();
 	var camera = new THREE.PerspectiveCamera( 75, 
@@ -26,11 +32,6 @@
 	document.body.appendChild( renderer.domElement );
 
 	var fly_controls = new THREE.FlyControls( camera, renderer.domElement );
-	fly_controls.movementSpeed = 0.1;
-	fly_controls.domElement = renderer.domElement;
-	fly_controls.rollSpeed = 0.0;
-	fly_controls.dragToLook = true;
-	fly_controls.autoForward = false;
 
 	var geometry = new THREE.BoxGeometry();
 	var material = new THREE.MeshNormalMaterial();
@@ -38,17 +39,37 @@
 	camera.position.z = 5;
 	fly_controls.update(1);
 	
-	for(let i = 0; i < 100; i++) {
-		let gg = new THREE.Mesh( geometry, material );
-		gg.position.x = i * 2;
-		scene.add( gg );
+	function load() {
+		fly_controls.movementSpeed = 1;
+		fly_controls.domElement = renderer.domElement;
+		fly_controls.rollSpeed = 0.0;
+		fly_controls.dragToLook = true;
+		fly_controls.autoForward = false;
+		
+		for(let i = 0; i < numBodies; i++) {
+			let gg = new THREE.Mesh( geometry, material );
+			gg.position.x = (worldEnd - worldStart) * (Math.random() - 0.5);
+			gg.position.y = (worldEnd - worldStart) * (Math.random() - 0.5);
+			gg.position.z = (worldEnd - worldStart) * (Math.random() - 0.5);
+			scene.add( gg );
+		}
 	}
 
 	function animate() {
 		requestAnimationFrame( animate );
 		renderer.render( scene, camera );
+		
+		if(camera.position.x < worldStart) camera.position.x = worldStart;
+		if(camera.position.y < worldStart) camera.position.y = worldStart;
+		if(camera.position.z < worldStart) camera.position.z = worldStart;
+		if(camera.position.x > worldEnd) camera.position.x = worldEnd;
+		if(camera.position.y > worldEnd) camera.position.y = worldEnd;
+		if(camera.position.z > worldEnd) camera.position.z = worldEnd;
+
 		fly_controls.update(1);
 	}
+
+	load();
 	animate();
 
 </script>
