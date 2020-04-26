@@ -14,7 +14,7 @@
 
 </html>
 <script type="text/javascript" src="three/build/three.js"></script>
-<script type="text/javascript" src="three/examples/js/controls/FlyControls.js"></script>
+<script type="text/javascript" src="util/MicroscopeControls.js"></script>
 <script type="text/javascript" src="three/examples/js/postprocessing/EffectComposer.js"></script>
 <script type="text/javascript" src="three/examples/js/postprocessing/RenderPass.js"></script>
 <script type="text/javascript" src="three/examples/js/postprocessing/BokehPass.js"></script>
@@ -38,19 +38,13 @@
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	document.body.appendChild( renderer.domElement );
 
-	var fly_controls = new THREE.FlyControls( camera, renderer.domElement );
-
-	var geometry = new THREE.BoxGeometry();
-	var material = new THREE.MeshNormalMaterial();
-
-	camera.position.z = 5;
-	fly_controls.update(1);
+	var fly_controls = new UTIL.MicroscopeControls( camera, renderer.domElement );
 	
 	function load_postprocessing() {
 		var renderPass = new THREE.RenderPass( scene, camera );
 
 		var bokehPass = new THREE.BokehPass( scene, camera, {
-			focus: 1.0,
+			focus: 15.0,
 			aperture: 0.025,
 			maxblur: 1.0,
 			width: window.innerWidth,
@@ -65,24 +59,37 @@
 		post_proc.composer = composer;
 		post_proc.bokeh = bokehPass;
 		post_proc.controls = {
-			focus: 1.0,
-			aperture: 0.025,
-			maxblur: 1.0
+			focus: 10.0,
+			aperture: 500.0,
+			maxblur: 1.0,
+			_minFocus: 1.0,
+			_maxFocus: 2000.0
 		};
 		post_proc.update = function () {
 			post_proc.bokeh.uniforms["focus"].value = post_proc.controls.focus;
 			post_proc.bokeh.uniforms["aperture"].value = post_proc.controls.aperture * 1e-5;
 			post_proc.bokeh.uniforms["maxblur"].value = post_proc.controls.maxblur;
 		}
-
+		fly_controls.setFocusControls( post_proc );
 	}
 
-	function load() {
-		fly_controls.movementSpeed = 1;
+	function load_world() {
+		fly_controls.movementSpeed = 0.2;
 		fly_controls.domElement = renderer.domElement;
 		fly_controls.rollSpeed = 0.0;
 		fly_controls.dragToLook = true;
 		fly_controls.autoForward = false;
+
+		var backgound = new THREE.PlaneGeometry(
+			8 * worldEnd - worldStart, 8 * worldEnd - worldStart, 1, 1);
+		
+		var backgroundPanel = new THREE.Mesh( backgound, 
+			new THREE.MeshBasicMaterial( { color: 0x000000 } ) );
+		backgroundPanel.position.z = worldStart;
+		scene.add(backgroundPanel);
+
+		var geometry = new THREE.BoxGeometry();
+		var material = new THREE.MeshNormalMaterial();
 
 		for(let i = 0; i < numBodies; i++) {
 			let gg = new THREE.Mesh( geometry, material );
@@ -91,11 +98,17 @@
 			gg.position.z = (worldEnd - worldStart) * (Math.random() - 0.5);
 			scene.add( gg );
 		}
+
+		camera.position.z = -5;
+		// camera.position.x = worldEnd;
+		// camera.position.y = worldEnd;
+		fly_controls.update(1);
 	}
 
 	function animate() {
 		requestAnimationFrame( animate );
 		post_proc.composer.render( 0.1 );
+		// renderer.render( scene, camera );
 		
 		if(camera.position.x < worldStart) camera.position.x = worldStart;
 		if(camera.position.y < worldStart) camera.position.y = worldStart;
@@ -103,11 +116,19 @@
 		if(camera.position.x > worldEnd) camera.position.x = worldEnd;
 		if(camera.position.y > worldEnd) camera.position.y = worldEnd;
 		if(camera.position.z > worldEnd) camera.position.z = worldEnd;
+		if(post_proc.controls.focus < post_proc.controls._minFocus) 
+			post_proc.controls.focus = post_proc.controls._minFocus;
+		if(post_proc.controls.focus > post_proc.controls._maxFocus) 
+			post_proc.controls.focus = post_proc.controls._maxFocus;
 
 		fly_controls.update(1);
 	}
 
-	load();
+	function load_events() {
+		// renderer.domElement.addEventListener()
+	}
+
+	load_world();
 	load_postprocessing();
 	animate();
 
