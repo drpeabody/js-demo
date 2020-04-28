@@ -13,21 +13,28 @@
 	</body>
 
 </html>
+<script type="text/javascript">
+	this.FINDME = {};
+</script>
 <script type="text/javascript" src="three/build/three.js"></script>
-<script type="text/javascript" src="util/MicroscopeControls.js"></script>
 <script type="text/javascript" src="three/examples/js/postprocessing/EffectComposer.js"></script>
 <script type="text/javascript" src="three/examples/js/postprocessing/RenderPass.js"></script>
 <script type="text/javascript" src="three/examples/js/postprocessing/BokehPass.js"></script>
 <script type="text/javascript" src="three/examples/js/postprocessing/ShaderPass.js"></script>
 <script type="text/javascript" src="three/examples/js/shaders/BokehShader.js"></script>
 <script type="text/javascript" src="three/examples/js/shaders/CopyShader.js"></script>
+
+<script type="text/javascript" src="shaders/FresnelShader.js"></script>
+<script type="text/javascript" src="util/MicroscopeControls.js"></script>
+<script type="text/javascript" src="microbes/BasicAmoebaPopulation.js"></script>
+
 <script>
 	console.log("Reference Video for the looks:");
 	console.log("https://www.youtube.com/watch?v=Y5rfNxFzehA");
 
 	var worldStart = -1e2;
 	var worldEnd =   1e2;
-	var numBodies = 1e3;
+	var numBodies = 1e2;
 
 	var scene = new THREE.Scene();
 	var camera = new THREE.PerspectiveCamera( 75, 
@@ -38,7 +45,9 @@
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	document.body.appendChild( renderer.domElement );
 
-	var fly_controls = new UTIL.MicroscopeControls( camera, renderer.domElement );
+	var fly_controls = new FINDME.MicroscopeControls( camera, renderer.domElement );
+
+	var microbes = {};
 	
 	function load_postprocessing() {
 		var renderPass = new THREE.RenderPass( scene, camera );
@@ -60,10 +69,10 @@
 		post_proc.bokeh = bokehPass;
 		post_proc.controls = {
 			focus: 10.0,
-			aperture: 500.0,
-			maxblur: 1.0,
+			aperture: 5.0,
+			maxblur: 10.0,
 			_minFocus: 1.0,
-			_maxFocus: 2000.0
+			_maxFocus: 200.0
 		};
 		post_proc.update = function () {
 			post_proc.bokeh.uniforms["focus"].value = post_proc.controls.focus;
@@ -88,16 +97,7 @@
 		backgroundPanel.position.z = worldStart;
 		scene.add(backgroundPanel);
 
-		var geometry = new THREE.BoxGeometry();
-		var material = new THREE.MeshNormalMaterial();
-
-		for(let i = 0; i < numBodies; i++) {
-			let gg = new THREE.Mesh( geometry, material );
-			gg.position.x = (worldEnd - worldStart) * (Math.random() - 0.5);
-			gg.position.y = (worldEnd - worldStart) * (Math.random() - 0.5);
-			gg.position.z = (worldEnd - worldStart) * (Math.random() - 0.5);
-			scene.add( gg );
-		}
+		microbes.test = new FINDME.BasicAmoebaPopulation(scene, numBodies);
 
 		camera.position.z = -5;
 		// camera.position.x = worldEnd;
