@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"> 
+	<title>MRisk - A Modified Risk Game</title>
+</head>
+<style type="text/css">
+	body {
+		margin: 0;
+		text-align: center;
+		overflow: hidden;
+	}
+</style>
+<body oncontextmenu="return false">
+
+	<canvas id="canvas"></canvas>
+
+</body>
+
+
+<script type="text/javascript" src="complex.js"></script>
+<script type="text/javascript" src="spinor.js"></script>
+<script type="text/javascript">
+	canvas = document.getElementById("canvas");
+	canvas.width = Math.floor(window.innerWidth);
+	canvas.height = Math.floor(window.innerHeight);
+	ctx = canvas.getContext('2d', { alpha: false });
+
+	width = canvas.width; height = canvas.height;
+	time = 0;
+
+	color_fg = "#fff";
+	color_bg = "#fff";
+	color_clear = "#000";
+	color_focus1 = "#f00";
+	color_focus2 = "#0f0";
+
+	spot_size = 3;
+	scale = 30;
+
+	Spinor_Rotator = function(theta, a_x, a_y, a_z) {
+		let cos = Math.cos(theta);
+		let sin = Math.sin(theta);
+		return [
+			[new Complex(cos    , a_z*sin), new Complex(-a_y*sin, a_x*sin)],
+			[new Complex(a_y*sin, a_x*sin), new Complex(cos     , -a_z*sin)]
+		]
+	}
+
+	Tx = (x) => {
+		return x*scale + width/2;
+	}
+	Ty = (y) => {
+		return -y*scale + height/2;
+	}
+	
+	s = new Spinor();
+
+	draw = () => {
+		ctx.fillStyle = color_clear;
+		ctx.fillRect(0, 0, width, height);
+		time += 0.02;
+
+		ctx.strokeStyle = color_fg;
+		ctx.beginPath();
+		ctx.moveTo(Tx(0), Ty(0));
+		ctx.lineTo(Tx(10), Ty(0));
+		ctx.moveTo(Tx(0), Ty(0));
+		ctx.lineTo(Tx(0), Ty(10));
+		ctx.closePath();
+		ctx.stroke();
+
+		s.rotateBy(Spinor_Rotator(time, 1, 0, 0));
+		s.draw(ctx, Tx, Ty);
+		s.rotateBy(Spinor_Rotator(-time, 1, 0, 0));
+		
+		requestAnimationFrame(draw);
+	}
+
+	draw();
+
+</script>
+
+</html>
