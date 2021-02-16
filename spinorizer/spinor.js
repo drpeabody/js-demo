@@ -1,4 +1,7 @@
 
+color_focus1 = "#f00";
+color_focus2 = "#0f0";
+
 class Spinor {
 	constructor() {
 		this.s0 = new Complex(1, 0);
@@ -12,16 +15,15 @@ class Spinor {
 		let Ts0y = Ty(this.s0.y);
 		let Ts1x = Tx(this.s1.x);
 		let Ts1y = Ty(this.s1.y);
-		var grad = ctx.createLinearGradient(Ts0x, Ts0y, Ts1x, Ts1y);
-		grad.addColorStop(0, color_focus1);
-		grad.addColorStop(1, color_focus2);
-		ctx.strokeStyle = grad;
+		let spinor_grad = ctx.createLinearGradient(Ts0x, Ts0y, Ts1x, Ts1y);
+		spinor_grad.addColorStop(0, color_focus1);
+		spinor_grad.addColorStop(1, color_focus2);
+		ctx.strokeStyle = spinor_grad;
 		ctx.beginPath();
 		ctx.moveTo(Ts0x, Ts0y);
 		ctx.lineTo(Ts1x, Ts1y);
 		ctx.closePath();
 		ctx.stroke();
-
 	}
 	rotateBy(rotator) {
 		this.s0 = rotator[0][0].product(this.s0).sum(rotator[0][1].product(this.s1));

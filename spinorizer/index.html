@@ -32,13 +32,15 @@
 	color_fg = "#fff";
 	color_bg = "#fff";
 	color_clear = "#000";
-	color_focus1 = "#f00";
-	color_focus2 = "#0f0";
 
 	spot_size = 3;
-	scale = 30;
+	scale = 100;
 
 	Spinor_Rotator = function(theta, a_x, a_y, a_z) {
+		let m = Math.sqrt(a_x*a_x + a_y*a_y + a_z*a_z);
+		a_x = a_x / m;
+		a_y = a_y / m;
+		a_z = a_z / m;
 		let cos = Math.cos(theta);
 		let sin = Math.sin(theta);
 		return [
@@ -54,8 +56,11 @@
 		return -y*scale + height/2;
 	}
 	
-	s = new Spinor();
 
+	let total_time = 0;
+	let total_count = 0;
+
+	s = new Spinor();
 	draw = () => {
 		ctx.fillStyle = color_clear;
 		ctx.fillRect(0, 0, width, height);
@@ -64,13 +69,13 @@
 		ctx.strokeStyle = color_fg;
 		ctx.beginPath();
 		ctx.moveTo(Tx(0), Ty(0));
-		ctx.lineTo(Tx(10), Ty(0));
+		ctx.lineTo(Tx(1), Ty(0));
 		ctx.moveTo(Tx(0), Ty(0));
-		ctx.lineTo(Tx(0), Ty(10));
+		ctx.lineTo(Tx(0), Ty(1));
 		ctx.closePath();
 		ctx.stroke();
 
-		s.rotateBy(Spinor_Rotator(time, 1, 0, 0));
+		s.rotateBy(Spinor_Rotator( time, 1, 0, 0));
 		s.draw(ctx, Tx, Ty);
 		s.rotateBy(Spinor_Rotator(-time, 1, 0, 0));
 		
