@@ -1,5 +1,10 @@
 
 class Complex {
+
+	static i(x) {
+		return new Complex(0, x);
+	}
+
 	constructor(x, y) {
 		this.x = x;
 		this.y = y;
@@ -34,4 +39,8 @@ class Complex {
 	str() {
 		return `${this.x} + i${this.y}`;
 	}
+	toString() {
+		return `${this.x} + i${this.y}`;
+	}
+
 }
