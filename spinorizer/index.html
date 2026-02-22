@@ -19,6 +19,7 @@
 
 
 <script type="text/javascript" src="complex.js"></script>
+<script type="text/javascript" src="drawUtil.js"></script>
 <script type="text/javascript" src="spinor.js"></script>
 <script type="text/javascript">
 	canvas = document.getElementById("canvas");
@@ -66,14 +67,7 @@
 		ctx.fillRect(0, 0, width, height);
 		time += 0.02;
 
-		ctx.strokeStyle = color_fg;
-		ctx.beginPath();
-		ctx.moveTo(Tx(0), Ty(0));
-		ctx.lineTo(Tx(1), Ty(0));
-		ctx.moveTo(Tx(0), Ty(0));
-		ctx.lineTo(Tx(0), Ty(1));
-		ctx.closePath();
-		ctx.stroke();
+		DrawUtil.drawAxes(ctx);
 
 		s.rotateBy(Spinor_Rotator( time, 1, 0, 0));
 		s.draw(ctx, Tx, Ty);
